@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { connectSessionStore } from './session-store.js';
-import { ranges, summarize, normalizeCampaign } from './reporting.js';
+import { ranges, summarize, normalizeCampaign, reportingError } from './reporting.js';
 import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
@@ -135,9 +135,9 @@ export function createApp(config = process.env, clientFactory, sessionStore) {
       await save(req);
       res.json({ account, clients, range, campaigns, totals: summarize(campaigns), fetchedAt: new Date().toISOString() });
     } catch (error) {
-      const status = error.response?.status;
-      const message = status === 401 ? 'Google authorization expired. Reconnect Google Ads.' : status === 403 ? 'Google denied reporting access. Check account permissions and your Cloud project’s Google Ads API access.' : status === 429 ? 'Google Ads is temporarily rate limiting requests. Try again shortly.' : 'Could not load campaign performance from Google Ads. Please try again.';
-      res.status(502).json({ error: message });
+      const diagnostic = reportingError(error);
+      console.warn('Google Ads reporting failed:', diagnostic.code);
+      res.status(502).json(diagnostic);
     }
   });
   app.post('/api/logout', csrf, (req, res) => req.session.destroy(() => { res.clearCookie('8lm.sid', { httpOnly: true, secure, sameSite: 'lax' }); res.json({ ok: true }); }));
