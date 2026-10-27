@@ -10,7 +10,7 @@
 </head>
 <body>
   <main class="shell">
-    <header><a class="brand" href="./" aria-label="8LM home">8LM<span class="brand-period">.</span></a></header>
+    <header><a class="brand" href="./" aria-label="8LM home">8LM<span class="brand-period">.</span></a><span class="header-context">Advertising workspace</span><span class="header-product">Google Ads</span></header>
     <section class="login-panel" aria-labelledby="login-title">
       <div class="form-wrap">
         <h1 id="login-title">Log in</h1>
@@ -29,7 +29,7 @@
           <p id="signed-in-email" class="subtitle"></p>
           <div id="account-setup">
           <a class="google-button" href="/auth/google?connect=ads" id="connect-ads">Connect Google Ads</a>
-          <p class="connection-note">Google Ads requests permission to view and manage your accounts. This app currently only lists accounts.</p>
+          <p class="connection-note">Google Ads requests permission to view and manage your accounts. 8LM uses this connection to display your campaigns and performance.</p>
           <div id="ads-accounts"></div>
           </div>
           <section id="connected-account" hidden aria-label="Connected account">
@@ -41,10 +41,10 @@
             <p id="dashboard-status" role="status" aria-live="polite"></p>
             <div id="dashboard-data" hidden>
               <div id="metric-cards" class="metric-grid"></div>
-              <div class="campaign-heading"><h2>Campaigns</h2><label for="campaign-search" class="sr-only">Search campaigns</label><input id="campaign-search" type="search" placeholder="Search campaigns"></div>
+              <section class="campaign-section"><div class="campaign-heading"><div><h2>Campaigns <span id="campaign-count" class="count-badge"></span></h2><p class="section-description">Performance across your campaigns</p></div><div class="table-controls"><label for="campaign-status" class="sr-only">Campaign status</label><select id="campaign-status"><option value="ALL">All statuses</option><option value="ENABLED">Enabled</option><option value="PAUSED">Paused</option></select><label for="campaign-search" class="sr-only">Search campaigns</label><input id="campaign-search" type="search" placeholder="Search campaigns"></div></div>
               <div class="table-scroll" tabindex="0" role="region" aria-label="Campaign performance"><table><thead><tr><th scope="col">Campaign</th><th scope="col">Status</th><th scope="col">Impressions</th><th scope="col">Clicks</th><th scope="col">CTR</th><th scope="col">Spend</th><th scope="col">Avg. CPC</th><th scope="col">Conversions</th></tr></thead><tbody id="campaign-rows"></tbody></table></div>
               <p id="campaign-empty" hidden></p>
-              <p id="report-note" class="connection-note"></p>
+              </section><p id="report-note" class="connection-note"></p>
             </div>
             <button type="button" id="change-account" class="text-button">Change account</button>
           </section>

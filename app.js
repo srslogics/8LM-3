@@ -97,11 +97,11 @@ function showConnectedAccount(id, focus = true) {
   document.querySelector('#connected-account').hidden = false;
   document.querySelector('#selected-account-id').textContent = id.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
   const heading = document.querySelector('#login-title');
-  heading.textContent = 'Campaign performance';
+  heading.textContent = 'Performance overview';
   document.body.classList.add('dashboard-mode');
   dashboardClient = '';
   loadDashboard();
-  document.title = 'Account overview · 8LM';
+  document.title = 'Overview · 8LM';
   connectionStatus.textContent = '';
   if (focus) { heading.tabIndex = -1; heading.focus(); }
 }
@@ -125,13 +125,16 @@ const money = value => new Intl.NumberFormat(undefined, { style: 'currency', cur
 function renderCampaigns() {
   const body = document.querySelector('#campaign-rows'); body.replaceChildren();
   const term = document.querySelector('#campaign-search').value.toLowerCase();
-  const rows = dashboardReport.campaigns.filter(c => c.name.toLowerCase().includes(term));
+  const filter = document.querySelector('#campaign-status').value;
+  const rows = dashboardReport.campaigns.filter(c => c.name.toLowerCase().includes(term) && (filter === 'ALL' || c.status === filter));
+  document.querySelector('#campaign-count').textContent = `${rows.length}`;
   for (const c of rows) {
     const row = document.createElement('tr');
     const values = [c.name, c.status, number(c.impressions), number(c.clicks), percentage(c.impressions ? c.clicks / c.impressions : 0), money(c.cost), c.clicks ? money(c.cost / c.clicks) : '—', number(c.conversions)];
     values.forEach((value, index) => {
       const cell = document.createElement(index === 0 ? 'th' : 'td');
       if (index === 0) { cell.scope = 'row'; cell.textContent = value; const detail = document.createElement('small'); detail.textContent = `${c.channel.replaceAll('_', ' ')} · ${c.id}`; cell.append(detail); }
+      else if (index === 1) { const badge = document.createElement('span'); badge.className = `status-badge ${c.status === 'ENABLED' ? 'enabled' : 'paused'}`; badge.textContent = c.status.charAt(0) + c.status.slice(1).toLowerCase(); cell.append(badge); }
       else cell.textContent = value;
       row.append(cell);
     });
@@ -151,7 +154,7 @@ async function loadDashboard() {
   try {
     const data = await api(`/api/ads/dashboard?range=${encodeURIComponent(range)}${dashboardClient ? `&customer=${encodeURIComponent(dashboardClient)}` : ''}`);
     if (request !== dashboardRequest) return;
-    document.querySelector('#dashboard-account').textContent = data.account.descriptiveName || data.account.id;
+    document.querySelector('#dashboard-account').textContent = data.account.descriptiveName || 'Google Ads account';
     const picker = document.querySelector('#client-picker');
     picker.hidden = !data.clients.length;
     const select = document.querySelector('#client-account'); select.replaceChildren();
@@ -175,5 +178,6 @@ async function loadDashboard() {
 document.querySelector('#date-range').addEventListener('change', loadDashboard);
 document.querySelector('#refresh-dashboard').addEventListener('click', loadDashboard);
 document.querySelector('#client-account').addEventListener('change', event => { dashboardClient = event.target.value; loadDashboard(); });
+document.querySelector('#campaign-status').addEventListener('change', () => { if (dashboardReport) renderCampaigns(); });
 document.querySelector('#campaign-search').addEventListener('input', () => { if (dashboardReport) renderCampaigns(); });
 initSession();
