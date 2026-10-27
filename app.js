@@ -97,12 +97,17 @@ function showConnectedAccount(id, focus = true) {
   document.querySelector('#connected-account').hidden = false;
   document.querySelector('#selected-account-id').textContent = id.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
   const heading = document.querySelector('#login-title');
-  heading.textContent = 'Account overview';
+  heading.textContent = 'Campaign performance';
+  document.body.classList.add('dashboard-mode');
+  dashboardClient = '';
+  loadDashboard();
   document.title = 'Account overview · 8LM';
   connectionStatus.textContent = '';
   if (focus) { heading.tabIndex = -1; heading.focus(); }
 }
 document.querySelector('#change-account').addEventListener('click', async () => {
+  ++dashboardRequest;
+  document.body.classList.remove('dashboard-mode');
   document.querySelector('#connected-account').hidden = true;
   document.querySelector('#account-setup').hidden = false;
   document.querySelector('#login-title').textContent = 'Choose an account';
@@ -110,4 +115,65 @@ document.querySelector('#change-account').addEventListener('click', async () => 
   connectionStatus.textContent = '';
   await loadAccounts(selectedAccount);
 });
+
+let dashboardClient = '';
+let dashboardRequest = 0;
+let dashboardReport;
+const number = value => new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
+const percentage = value => new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 2 }).format(value);
+const money = value => new Intl.NumberFormat(undefined, { style: 'currency', currency: dashboardReport.account.currencyCode }).format(value);
+function renderCampaigns() {
+  const body = document.querySelector('#campaign-rows'); body.replaceChildren();
+  const term = document.querySelector('#campaign-search').value.toLowerCase();
+  const rows = dashboardReport.campaigns.filter(c => c.name.toLowerCase().includes(term));
+  for (const c of rows) {
+    const row = document.createElement('tr');
+    const values = [c.name, c.status, number(c.impressions), number(c.clicks), percentage(c.impressions ? c.clicks / c.impressions : 0), money(c.cost), c.clicks ? money(c.cost / c.clicks) : '—', number(c.conversions)];
+    values.forEach((value, index) => {
+      const cell = document.createElement(index === 0 ? 'th' : 'td');
+      if (index === 0) { cell.scope = 'row'; cell.textContent = value; const detail = document.createElement('small'); detail.textContent = `${c.channel.replaceAll('_', ' ')} · ${c.id}`; cell.append(detail); }
+      else cell.textContent = value;
+      row.append(cell);
+    });
+    body.append(row);
+  }
+  const empty = document.querySelector('#campaign-empty'); empty.hidden = rows.length > 0;
+  empty.textContent = dashboardReport.campaigns.length ? 'No campaigns match your search.' : 'No campaigns were returned for this date range.';
+}
+async function loadDashboard() {
+  const request = ++dashboardRequest;
+  const status = document.querySelector('#dashboard-status');
+  const content = document.querySelector('#dashboard-data');
+  content.hidden = true;
+  document.querySelector('#connected-account').setAttribute('aria-busy', 'true');
+  status.textContent = 'Loading Google Ads performance…';
+  const range = document.querySelector('#date-range').value;
+  try {
+    const data = await api(`/api/ads/dashboard?range=${encodeURIComponent(range)}${dashboardClient ? `&customer=${encodeURIComponent(dashboardClient)}` : ''}`);
+    if (request !== dashboardRequest) return;
+    document.querySelector('#dashboard-account').textContent = data.account.descriptiveName || data.account.id;
+    const picker = document.querySelector('#client-picker');
+    picker.hidden = !data.clients.length;
+    const select = document.querySelector('#client-account'); select.replaceChildren();
+    const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose a client account'; select.append(placeholder);
+    for (const client of data.clients) { const option = document.createElement('option'); option.value = client.id; option.textContent = `${client.name} · ${client.id}`; select.append(option); }
+    select.value = dashboardClient;
+    if (data.manager) { status.textContent = data.clients.length ? 'Choose a client account to view its campaigns.' : 'No enabled client accounts are available under this manager.'; return; }
+    dashboardReport = data;
+    const cards = document.querySelector('#metric-cards'); cards.replaceChildren();
+    for (const [label, value] of [['Spend', money(data.totals.cost)], ['Impressions', number(data.totals.impressions)], ['Clicks', number(data.totals.clicks)], ['Conversions', number(data.totals.conversions)], ['CTR', percentage(data.totals.ctr)], ['Avg. CPC', data.totals.clicks ? money(data.totals.averageCpc) : '—']]) {
+      const card = document.createElement('div'); card.className = 'metric-card'; const title = document.createElement('span'); title.textContent = label; const amount = document.createElement('strong'); amount.textContent = value; card.append(title, amount); cards.append(card);
+    }
+    renderCampaigns(); content.hidden = false; status.textContent = '';
+    document.querySelector('#report-note').textContent = `Account time zone: ${data.account.timeZone}. Currency: ${data.account.currencyCode}. Last 7/30 days exclude today. Removed campaigns are excluded from rows and totals. Google reporting may be delayed. Updated ${new Date(data.fetchedAt).toLocaleTimeString()}.`;
+  } catch (error) {
+    if (request === dashboardRequest) status.textContent = `${error.message} Use Refresh to retry, or Change account to reconnect.`;
+  } finally {
+    if (request === dashboardRequest) document.querySelector('#connected-account').setAttribute('aria-busy', 'false');
+  }
+}
+document.querySelector('#date-range').addEventListener('change', loadDashboard);
+document.querySelector('#refresh-dashboard').addEventListener('click', loadDashboard);
+document.querySelector('#client-account').addEventListener('change', event => { dashboardClient = event.target.value; loadDashboard(); });
+document.querySelector('#campaign-search').addEventListener('input', () => { if (dashboardReport) renderCampaigns(); });
 initSession();

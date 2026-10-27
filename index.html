@@ -33,10 +33,19 @@
           <div id="ads-accounts"></div>
           </div>
           <section id="connected-account" hidden aria-label="Connected account">
-            <p class="connected-label">Google Ads connected</p>
-            <dl class="account-details"><dt>Selected account</dt><dd id="selected-account-id"></dd></dl>
-            <p class="connection-note">Your account connection is complete. Campaign reporting and management are not available in 8LM yet.</p>
-            <a class="google-button" href="https://ads.google.com/" target="_blank" rel="noopener noreferrer">Open Google Ads ↗</a>
+            <div class="dashboard-toolbar">
+              <div><p class="connected-label">Google Ads · <span id="selected-account-id"></span></p><p id="dashboard-account"></p></div>
+              <div class="dashboard-controls"><div><label for="date-range">Date range</label><select id="date-range"><option value="LAST_7_DAYS">Last 7 days</option><option value="LAST_30_DAYS" selected>Last 30 days</option><option value="THIS_MONTH">This month</option><option value="LAST_MONTH">Last month</option></select></div><button type="button" class="google-button" id="refresh-dashboard">Refresh</button></div>
+            </div>
+            <div id="client-picker" hidden><label for="client-account">Client account</label><select id="client-account"></select></div>
+            <p id="dashboard-status" role="status" aria-live="polite"></p>
+            <div id="dashboard-data" hidden>
+              <div id="metric-cards" class="metric-grid"></div>
+              <div class="campaign-heading"><h2>Campaigns</h2><label for="campaign-search" class="sr-only">Search campaigns</label><input id="campaign-search" type="search" placeholder="Search campaigns"></div>
+              <div class="table-scroll" tabindex="0" role="region" aria-label="Campaign performance"><table><thead><tr><th scope="col">Campaign</th><th scope="col">Status</th><th scope="col">Impressions</th><th scope="col">Clicks</th><th scope="col">CTR</th><th scope="col">Spend</th><th scope="col">Avg. CPC</th><th scope="col">Conversions</th></tr></thead><tbody id="campaign-rows"></tbody></table></div>
+              <p id="campaign-empty" hidden></p>
+              <p id="report-note" class="connection-note"></p>
+            </div>
             <button type="button" id="change-account" class="text-button">Change account</button>
           </section>
           <button type="button" id="logout" class="text-button">Sign out</button>

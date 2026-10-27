@@ -34,10 +34,18 @@ Sources: https://developers.google.com/identity/protocols/oauth2/web-server and 
 
 ## Behavior and limits
 
-Users choose Continue with Google, then Connect Google Ads. Ads consent must use the same Google identity. The app lists directly accessible accounts (including manager accounts) and lets the user select one. It does not traverse manager hierarchies or modify ads. Google provides a broad view/manage Ads scope; the UI explains that permission before consent.
+Users choose Continue with Google, then Connect Google Ads. Ads consent must use the same Google identity. The app lists directly accessible accounts (including manager accounts) and lets the user select one. The dashboard discovers enabled client accounts under a selected manager and validates client access before reporting. It does not modify ads. Google provides a broad view/manage Ads scope; the UI explains that permission before consent.
 
 OAuth state, PKCE, nonce and verified ID tokens protect sign-in. Session cookies are HttpOnly, SameSite=Lax and Secure on HTTPS. Tokens stay server-side. Account selection and logout require a same-origin CSRF token. Public files are allowlisted; secrets and source are not served.
 
 This initial single-instance version stores sessions and tokens in server memory for up to eight hours. Restarts, deploys and instance changes require sign-in/reconnection; selected accounts are not durable. Add an encrypted persistent token store and shared session store before multi-instance or unattended operation. Sign-out clears local session tokens; users can revoke Google's authorization in their Google Account permissions.
 
 Password-based login remains unimplemented; Google sign-in is the working authentication method. Live sign-in and Ads access require configured credentials, Google project permissions, and user consent; automated tests use mocked Google responses.
+
+## Campaign dashboard
+
+Selecting an account opens campaign performance with spend, impressions, clicks, conversions, CTR, and average CPC. Date ranges are last 7 days, last 30 days, this month, and last month. The last 7/30 day ranges exclude today. Reports follow the Google Ads account time zone and currency. Removed campaigns are excluded from both rows and totals. Search filters the table only; summary cards remain account totals for the chosen period.
+
+Reporting uses server-side Google Ads SearchStream queries and handles all response batches. Manager accounts show an enabled-client selector; the server checks the manager's current client list before accessing a client with the login-customer-id header. Access and reporting failures show errors instead of zero metrics. Reloading defaults to the selected account and last 30 days; manager client choice and date filters are not persisted.
+
+Run `npm test` for mocked OAuth, reporting calculations, reporting failures, range validation and cross-account access checks. Live data verification requires the deployed service and an authorized user session.

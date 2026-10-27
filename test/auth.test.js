@@ -5,12 +5,23 @@ import { createApp } from '../server.js';
 test('OAuth sign-in, Ads consent, account authorization and logout', async () => {
   let options;
   let scope = '';
+  let manager = false;
+  let failReport = false;
   const mock = {
     generateCodeVerifierAsync: async () => ({ codeVerifier: 'verifier', codeChallenge: 'challenge' }),
     generateAuthUrl: value => { options = value; scope = value.scope.join(' '); return `https://accounts.google.com/o/oauth2/v2/auth?state=${value.state}`; },
     getToken: async value => { assert.equal(value.codeVerifier, 'verifier'); return { tokens: { id_token: 'identity', access_token: 'SECRET_TOKEN', scope } }; },
     verifyIdToken: async () => ({ getPayload: () => ({ sub: 'user1', email: 'test@example.com', email_verified: true, nonce: options.nonce }) }),
-    setCredentials() {}, on() {}, request: async () => ({ data: { resourceNames: ['customers/1234567890'] } })
+    setCredentials() {}, on() {}, request: async request => {
+      if (!request.data) return { data: { resourceNames: ['customers/1234567890'] } };
+      const query = request.data.query;
+      if (query.includes('FROM customer_client')) return { data: [{ results: [{ customerClient: { id: '5555555555', descriptiveName: 'Client' } }] }] };
+      if (query.includes('FROM customer LIMIT')) return { data: [{ results: [{ customer: { id: '1234567890', currencyCode: 'INR', timeZone: 'Asia/Kolkata', manager } }] }] };
+      if (failReport) throw { response: { status: 403 } };
+      if (manager) assert.equal(request.headers['login-customer-id'], '1234567890');
+      assert.match(query, /DURING LAST_30_DAYS/);
+      return { data: [{ results: [{ campaign: { id: '1', name: 'Search', status: 'ENABLED', advertisingChannelType: 'SEARCH' }, metrics: { impressions: '100', clicks: '10', costMicros: '2500000', conversions: 1.5 } }] }] };
+    }
   };
   const app = createApp({ GOOGLE_CLIENT_ID: 'test', GOOGLE_CLIENT_SECRET: 'secret', APP_ORIGIN: 'http://localhost:8000' }, () => mock);
   const server = app.listen(0, '127.0.0.1'); await new Promise(r => server.once('listening', r));
@@ -44,7 +55,21 @@ test('OAuth sign-in, Ads consent, account authorization and logout', async () =>
     assert.equal((await call('/api/ads/select', { id: '1234567890' }, session.csrf, 'https://evil.example')).status, 403);
     assert.equal((await call('/api/ads/select', { id: '999' }, session.csrf)).status, 400);
     assert.equal((await call('/api/ads/select', { id: '1234567890' }, session.csrf)).status, 200);
+    const report = await (await call('/api/ads/dashboard')).json();
+    assert.equal(report.totals.cost, 2.5);
+    assert.equal(report.totals.ctr, 0.1);
+    assert.equal(report.totals.averageCpc, 0.25);
+    assert.equal(report.totals.conversions, 1.5);
+    assert.equal((await call('/api/ads/dashboard?range=INVALID')).status, 400);
+    assert.equal((await call('/api/ads/dashboard?customer=999')).status, 403);
+    manager = true;
+    assert.equal((await (await call('/api/ads/dashboard')).json()).manager, true);
+    assert.equal((await call('/api/ads/dashboard?customer=999')).status, 403);
+    assert.equal((await call('/api/ads/dashboard?customer=5555555555')).status, 200);
+    failReport = true;
+    assert.equal((await call('/api/ads/dashboard?customer=5555555555')).status, 502);
     assert.equal((await call('/api/logout', {}, session.csrf)).status, 200);
+    assert.equal((await call('/api/ads/dashboard')).status, 401);
     assert.equal((await call('/api/ads/accounts')).status, 401);
   } finally { server.closeAllConnections(); await new Promise(r => server.close(r)); }
 });

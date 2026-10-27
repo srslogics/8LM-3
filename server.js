@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { ranges, summarize, normalizeCampaign } from './reporting.js';
 import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
@@ -97,6 +98,48 @@ export function createApp(config = process.env, clientFactory) {
     if (!req.session.accounts?.some(account => account.id === req.body.id)) return res.status(400).json({ error: 'Select an account from the available list.' });
     req.session.selectedAccount = req.body.id;
     await save(req); res.json({ selectedAccount: req.body.id });
+  });
+  app.get('/api/ads/dashboard', protect, async (req, res) => {
+    const selected = req.session.selectedAccount;
+    if (!selected || !req.session.adsTokens) return res.status(403).json({ error: 'Select a connected Google Ads account first.' });
+    const range = req.query.range || 'LAST_30_DAYS';
+    if (!ranges.includes(range)) return res.status(400).json({ error: 'Choose a supported date range.' });
+    const child = req.query.customer;
+    if (child !== undefined && (typeof child !== 'string' || !/^\d+$/.test(child))) return res.status(400).json({ error: 'Invalid client account.' });
+    try {
+      const client = clientFactory();
+      client.setCredentials(req.session.adsTokens);
+      client.on('tokens', tokens => { req.session.adsTokens = { ...req.session.adsTokens, ...tokens }; });
+      const version = config.GOOGLE_ADS_API_VERSION || 'v26';
+      if (!/^v\d+$/.test(version)) throw new Error('Invalid API version');
+      const query = async (customer, statement, manager) => {
+        const { data } = await client.request({ url: `https://googleads.googleapis.com/${version}/customers/${customer}/googleAds:searchStream`, method: 'POST',
+          headers: manager ? { 'login-customer-id': selected } : {}, data: { query: statement }, timeout: 30000 });
+        return data.flatMap(batch => batch.results || []);
+      };
+      const infoQuery = 'SELECT customer.id, customer.descriptive_name, customer.currency_code, customer.time_zone, customer.manager FROM customer LIMIT 1';
+      const rootRows = await query(selected, infoQuery, false);
+      let account = rootRows[0]?.customer;
+      if (!account) throw new Error('Account unavailable');
+      let clients = [];
+      if (account.manager) {
+        const rows = await query(selected, 'SELECT customer_client.id, customer_client.descriptive_name FROM customer_client WHERE customer_client.manager = FALSE AND customer_client.status = \'ENABLED\'', false);
+        clients = rows.map(row => ({ id: String(row.customerClient.id), name: row.customerClient.descriptiveName || row.customerClient.id }));
+        if (!child) { await save(req); return res.json({ manager: true, account, clients }); }
+        if (!clients.some(item => item.id === child)) return res.status(403).json({ error: 'This client is not accessible through the selected manager.' });
+        account = (await query(child, infoQuery, true))[0]?.customer;
+        if (!account) throw new Error('Account unavailable');
+      } else if (child && child !== selected) return res.status(403).json({ error: 'This client is not part of the selected account.' });
+      const customer = child || selected;
+      const rows = await query(customer, `SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM campaign WHERE segments.date DURING ${range} AND campaign.status != 'REMOVED' ORDER BY metrics.cost_micros DESC`, Boolean(clients.length));
+      const campaigns = rows.map(normalizeCampaign);
+      await save(req);
+      res.json({ account, clients, range, campaigns, totals: summarize(campaigns), fetchedAt: new Date().toISOString() });
+    } catch (error) {
+      const status = error.response?.status;
+      const message = status === 401 ? 'Google authorization expired. Reconnect Google Ads.' : status === 403 ? 'Google denied reporting access. Check account permissions and your Cloud project’s Google Ads API access.' : status === 429 ? 'Google Ads is temporarily rate limiting requests. Try again shortly.' : 'Could not load campaign performance from Google Ads. Please try again.';
+      res.status(502).json({ error: message });
+    }
   });
   app.post('/api/logout', csrf, (req, res) => req.session.destroy(() => { res.clearCookie('8lm.sid', { httpOnly: true, secure, sameSite: 'lax' }); res.json({ ok: true }); }));
   for (const [route, file] of Object.entries({ '/': 'index.html', '/index.html': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js' })) app.get(route, (_req, res) => res.sendFile(file, { root }));
