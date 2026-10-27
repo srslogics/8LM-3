@@ -40,6 +40,7 @@ const authMessages = {
 const authError = new URLSearchParams(location.search).get('auth');
 if (authError) { connectionStatus.textContent = authMessages[authError] || 'Please try signing in again.'; history.replaceState({}, '', '/'); }
 let csrfToken;
+let selectedAccount;
 async function api(path, body) {
   const response = await fetch(path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }, body: JSON.stringify(body) } : {});
   const data = await response.json();
@@ -63,12 +64,12 @@ async function loadAccounts(selected) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'submit'; button.textContent = 'Use this account';
     button.addEventListener('click', async () => {
       button.disabled = true;
-      try { await api('/api/ads/select', { id: select.value }); connectionStatus.textContent = `Google Ads account ${select.value} selected.`; }
+      try { await api('/api/ads/select', { id: select.value }); showConnectedAccount(select.value); }
       catch (error) { connectionStatus.textContent = error.message; }
       finally { button.disabled = false; }
     });
     container.append(label, select, button);
-    if (selected && !authError) connectionStatus.textContent = `Google Ads account ${selected} selected.`;
+
   } catch (error) {
     container.textContent = error.message;
     const retry = document.createElement('button'); retry.type = 'button'; retry.className = 'text-button'; retry.textContent = 'Try again'; retry.addEventListener('click', () => loadAccounts(selected)); container.append(retry);
@@ -83,11 +84,30 @@ async function initSession() {
     document.querySelector('#login-title').textContent = 'Your Google Ads';
     document.querySelector('.subtitle').hidden = true;
     document.querySelector('#signed-in-email').textContent = state.user.email;
-    if (state.adsConnected) { document.querySelector('#connect-ads').textContent = 'Reconnect Google Ads'; await loadAccounts(state.selectedAccount); }
+    if (state.adsConnected) { document.querySelector('#connect-ads').textContent = 'Reconnect Google Ads'; if (state.selectedAccount && !authError) showConnectedAccount(state.selectedAccount, false); else await loadAccounts(state.selectedAccount); }
   } catch { connectionStatus.textContent = 'Could not check your session. Please refresh the page.'; }
 }
 document.querySelector('#logout').addEventListener('click', async () => {
   try { await api('/api/logout', {}); location.assign('/'); }
   catch (error) { connectionStatus.textContent = error.message; }
+});
+function showConnectedAccount(id, focus = true) {
+  selectedAccount = id;
+  document.querySelector('#account-setup').hidden = true;
+  document.querySelector('#connected-account').hidden = false;
+  document.querySelector('#selected-account-id').textContent = id.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
+  const heading = document.querySelector('#login-title');
+  heading.textContent = 'Account overview';
+  document.title = 'Account overview · 8LM';
+  connectionStatus.textContent = '';
+  if (focus) { heading.tabIndex = -1; heading.focus(); }
+}
+document.querySelector('#change-account').addEventListener('click', async () => {
+  document.querySelector('#connected-account').hidden = true;
+  document.querySelector('#account-setup').hidden = false;
+  document.querySelector('#login-title').textContent = 'Choose an account';
+  document.title = 'Choose an account · 8LM';
+  connectionStatus.textContent = '';
+  await loadAccounts(selectedAccount);
 });
 initSession();

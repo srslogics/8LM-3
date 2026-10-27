@@ -27,9 +27,18 @@
         </div>
         <div id="account-content" hidden>
           <p id="signed-in-email" class="subtitle"></p>
+          <div id="account-setup">
           <a class="google-button" href="/auth/google?connect=ads" id="connect-ads">Connect Google Ads</a>
           <p class="connection-note">Google Ads requests permission to view and manage your accounts. This app currently only lists accounts.</p>
           <div id="ads-accounts"></div>
+          </div>
+          <section id="connected-account" hidden aria-label="Connected account">
+            <p class="connected-label">Google Ads connected</p>
+            <dl class="account-details"><dt>Selected account</dt><dd id="selected-account-id"></dd></dl>
+            <p class="connection-note">Your account connection is complete. Campaign reporting and management are not available in 8LM yet.</p>
+            <a class="google-button" href="https://ads.google.com/" target="_blank" rel="noopener noreferrer">Open Google Ads ↗</a>
+            <button type="button" id="change-account" class="text-button">Change account</button>
+          </section>
           <button type="button" id="logout" class="text-button">Sign out</button>
         </div>
         <p id="connection-status" class="form-status" role="status" aria-live="polite"></p>
