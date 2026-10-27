@@ -130,3 +130,14 @@ tbody small { color: #929b96; font-size: 10px; margin-top: 8px; }
 footer { border-top: 1px solid #e9ecee; padding: 20px 40px; font-size: 11px; color: #929b96; }
 @media(max-width: 1000px) { .metric-card:nth-child(3) { border-right: 0; } .metric-card:nth-child(-n+3) { border-bottom: 1px solid #e9eeeb; } .campaign-heading { align-items: flex-start; flex-direction: column; } }
 @media(max-width: 600px) { header { padding: 0 20px; min-height: 68px; gap: 16px; } .header-context { display: none; } .dashboard-mode .login-panel { padding: 30px 16px; } h1 { font-size: 27px; } .dashboard-toolbar { padding: 18px; gap: 20px; } .dashboard-controls { width: 100%; } .dashboard-controls > div { flex: 1; } .dashboard-controls select { min-width: 0; } .metric-card { padding: 20px 18px; border-bottom: 1px solid #e9eeeb; } .metric-card:nth-child(3) { border-right: 1px solid #e9eeeb; } .metric-card:nth-child(even) { border-right: 0; } .metric-card:nth-last-child(-n+2) { border-bottom: 0; } .campaign-heading { padding: 20px 16px; gap: 18px; } .table-controls { width: 100%; } .table-controls input { min-width: 0; width: 100%; font-size: 16px; } .table-controls select { min-width: 110px; width: 110px; font-size: 14px; } footer { padding: 20px; } }
+.create-campaign { width: auto; padding: 0 20px; height: 42px; margin: 0 0 4px; font-size: 13px; }
+dialog { width: min(740px, calc(100% - 24px)); max-height: 90svh; overflow-y: auto; border: 1px solid #dce3df; border-radius: 14px; padding: 28px; color: #202a29; box-shadow: 0 24px 100px #102a3333; }
+dialog::backdrop { background: #172b3855; }
+.builder-header { display: flex; justify-content: space-between; gap: 20px; align-items: start; }
+.builder-header h2 { margin: 0; font-size: 22px; }.builder-header p, #builder-context { font-size: 13px; color: #66756e; }
+#close-builder { border: 0; background: #eef2f0; border-radius: 6px; font-size: 24px; width: 36px; height: 36px; cursor: pointer; }
+.builder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+#campaign-form label { margin: 18px 0; }#campaign-form input, #campaign-form select, textarea { margin-top: 7px; }
+textarea { width: 100%; padding: 12px; font: inherit; border: 1px solid #dce2e5; border-radius: 7px; resize: vertical; font-weight: 400; }
+#review-fields { display: grid; grid-template-columns: 160px 1fr; gap: 12px; font-size: 13px; line-height: 1.6; }#review-fields dt { color: #6c746e; }#review-fields dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+#publish-note, #builder-status { font-size: 13px; line-height: 1.7; }@media(max-width:600px) { dialog { padding: 20px; }.builder-grid { grid-template-columns: 1fr; }#review-fields { grid-template-columns: 110px 1fr; } }

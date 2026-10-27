@@ -1,11 +1,12 @@
 import 'dotenv/config';
+import { validateDraft, campaignOperations, draftRepository } from './campaigns.js';
 import { connectSessionStore } from './session-store.js';
 import { ranges, summarize, normalizeCampaign, reportingError } from './reporting.js';
 import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
 import { OAuth2Client } from 'google-auth-library';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes, timingSafeEqual, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -15,12 +16,13 @@ const equal = (a, b) => typeof a === 'string' && typeof b === 'string' && Buffer
 const save = req => new Promise((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));
 const regenerate = req => new Promise((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
 
-export function createApp(config = process.env, clientFactory, sessionStore) {
+export function createApp(config = process.env, clientFactory, sessionStore, redis) {
   const origin = new URL(config.APP_ORIGIN || 'http://localhost:8000').origin;
   clientFactory ||= () => new OAuth2Client(config.GOOGLE_CLIENT_ID, config.GOOGLE_CLIENT_SECRET, `${origin}/auth/google/callback`);
   const secure = origin.startsWith('https:');
   if (secure && (!config.SESSION_SECRET || config.SESSION_SECRET.length < 32)) throw new Error('Set SESSION_SECRET to a random value of at least 32 characters.');
   const ready = Boolean(config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET);
+  const drafts = draftRepository(redis);
   const app = express();
   for (const method of ['get', 'post']) {
     const register = app[method].bind(app);
@@ -29,7 +31,7 @@ export function createApp(config = process.env, clientFactory, sessionStore) {
   app.set('trust proxy', 1);
   app.disable('x-powered-by');
   app.use(helmet({ contentSecurityPolicy: { directives: { 'upgrade-insecure-requests': secure ? [] : null } } }));
-  app.use(express.json({ limit: '4kb' }));
+  app.use(express.json({ limit: '32kb' }));
   app.use(session({ ...(sessionStore ? { store: sessionStore } : {}), name: '8lm.sid', secret: config.SESSION_SECRET || random(), resave: false, saveUninitialized: false,
     cookie: { httpOnly: true, secure, sameSite: 'lax', maxAge: 8 * 60 * 60 * 1000 } }));
   app.use(['/api', '/auth'], (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
@@ -140,8 +142,72 @@ export function createApp(config = process.env, clientFactory, sessionStore) {
       res.status(502).json(diagnostic);
     }
   });
+  const campaignContext = async req => {
+    const selected = req.session.selectedAccount;
+    const customer = req.body?.customer || req.query.customer || selected;
+    if (!selected || !req.session.adsTokens || typeof customer !== 'string' || !/^\d+$/.test(customer)) throw new Error('Select a connected client account first.');
+    const client = clientFactory(); client.setCredentials(req.session.adsTokens);
+    client.on('tokens', tokens => { req.session.adsTokens = { ...req.session.adsTokens, ...tokens }; });
+    const version = config.GOOGLE_ADS_API_VERSION || 'v26';
+    if (!/^v\d+$/.test(version)) throw new Error('Invalid API version');
+    const search = async (id, query) => {
+      const { data } = await client.request({ url: `https://googleads.googleapis.com/${version}/customers/${id}/googleAds:searchStream`, method: 'POST', headers: customer !== selected ? { 'login-customer-id': selected } : {}, data: { query }, timeout: 30000 });
+      return data.flatMap(batch => batch.results || []);
+    };
+    if (customer !== selected) {
+      const rows = await search(selected, 'SELECT customer_client.id FROM customer_client WHERE customer_client.manager = FALSE AND customer_client.status = \'ENABLED\'');
+      if (!rows.some(row => String(row.customerClient.id) === customer)) throw new Error('This client is not accessible through the selected manager.');
+    }
+    const account = (await search(customer, 'SELECT customer.id, customer.currency_code, customer.manager FROM customer LIMIT 1'))[0]?.customer;
+    if (!account || account.manager) throw new Error('Choose a client account, not a manager account.');
+    return { client, customer, account, version, search, key: `${req.session.user.sub}:${customer}`, headers: customer !== selected ? { 'login-customer-id': selected } : {} };
+  };
+  app.get('/api/campaign-draft', protect, async (req, res) => {
+    try { const ctx = await campaignContext(req); res.json({ draft: await drafts.get(ctx.key), currency: ctx.account.currencyCode, persistent: drafts.persistent }); }
+    catch (e) { res.status(400).json({ error: e.response ? reportingError(e).error : e.message }); }
+  });
+  app.post('/api/campaign-draft', protect, csrf, async (req, res) => {
+    try {
+      const ctx = await campaignContext(req);
+      const previous = await drafts.get(ctx.key);
+      if (previous && ['PUBLISHING', 'UNKNOWN'].includes(previous.status)) return res.status(409).json({ error: 'Previous publication needs reconciliation before editing.' });
+      const fields = validateDraft(req.body.draft || {});
+      const draft = { ...fields, id: randomUUID(), customer: ctx.customer, currency: ctx.account.currencyCode, status: 'DRAFT', updatedAt: new Date().toISOString() };
+      if (!await drafts.lock(ctx.key)) return res.status(409).json({ error: 'Publication is pending. Please wait before editing.' });
+      try { await drafts.put(ctx.key, draft); } finally { await drafts.unlock(ctx.key); }
+      res.json({ draft });
+    } catch (e) { res.status(400).json({ error: e.response ? reportingError(e).error : e.message }); }
+  });
+  app.post('/api/campaign-draft/publish', protect, csrf, async (req, res) => {
+    let ctx, draft, locked = false, sent = false;
+    try {
+      ctx = await campaignContext(req); draft = await drafts.get(ctx.key);
+      if (!draft || draft.id !== req.body.id || req.body.confirm !== true) return res.status(400).json({ error: 'Review and confirm the saved draft before publishing.' });
+      if (draft.status === 'PUBLISHED') return res.json({ draft });
+      if (!['DRAFT'].includes(draft.status)) return res.status(409).json({ error: 'Publication is pending or uncertain. Check Google Ads before trying again.' });
+      locked = await drafts.lock(ctx.key);
+      if (!locked) return res.status(409).json({ error: 'A publication is already pending. Check Google Ads before retrying.' });
+      const current = await drafts.get(ctx.key);
+      if (current?.id !== draft.id || current.status !== 'DRAFT') { await drafts.unlock(ctx.key); locked = false; return res.status(409).json({ error: 'Draft changed. Reload and review the latest draft.' }); }
+      const body = { mutateOperations: campaignOperations(validateDraft(draft), ctx.customer, draft.id), partialFailure: false };
+      const request = { url: `https://googleads.googleapis.com/${ctx.version}/customers/${ctx.customer}/googleAds:mutate`, method: 'POST', headers: ctx.headers, timeout: 30000, retry: false };
+      await ctx.client.request({ ...request, data: { ...body, validateOnly: true } });
+      draft.status = 'PUBLISHING'; await drafts.put(ctx.key, draft);
+      sent = true;
+      const { data } = await ctx.client.request({ ...request, data: body });
+      const resource = data.mutateOperationResponses?.find(row => row.campaignResult)?.campaignResult.resourceName;
+      if (!resource) throw new Error('Publication response could not be verified.');
+      draft = { ...draft, status: 'PUBLISHED', resource, publishedAt: new Date().toISOString() }; await drafts.put(ctx.key, draft);
+      await drafts.unlock(ctx.key); locked = false;
+      res.json({ draft });
+    } catch (e) {
+      if (sent && draft && ctx) { draft.status = 'UNKNOWN'; await drafts.put(ctx.key, draft); }
+      else if (locked && ctx) await drafts.unlock(ctx.key);
+      res.status(400).json({ error: sent ? 'Google may have created this campaign. To prevent duplicates, publishing is blocked. Check Google Ads for the campaign name and its 8LM draft ID.' : e.response ? reportingError(e).error : e.message });
+    }
+  });
   app.post('/api/logout', csrf, (req, res) => req.session.destroy(() => { res.clearCookie('8lm.sid', { httpOnly: true, secure, sameSite: 'lax' }); res.json({ ok: true }); }));
-  for (const [route, file] of Object.entries({ '/': 'index.html', '/index.html': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js' })) app.get(route, (_req, res) => res.sendFile(file, { root }));
+  for (const [route, file] of Object.entries({ '/': 'index.html', '/index.html': 'index.html', '/styles.css': 'styles.css', '/app.js': 'app.js', '/builder.js': 'builder.js' })) app.get(route, (_req, res) => res.sendFile(file, { root }));
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
   app.use((_req, res) => res.status(404).send('Not found'));
   app.use((_err, _req, res, _next) => res.status(500).json({ error: 'Something went wrong. Please try again.' }));
@@ -152,7 +218,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     const shared = await connectSessionStore(process.env);
     if (!shared) console.warn('REDIS_URL is not configured; sessions remain temporary. Add Render Key Value to enable shared sessions.');
-    const server = createApp(process.env, undefined, shared?.store).listen(port, '0.0.0.0', () => console.log(`8LM listening on port ${port}${shared ? ' with Redis sessions' : ''}`));
+    const server = createApp(process.env, undefined, shared?.store, shared?.client).listen(port, '0.0.0.0', () => console.log(`8LM listening on port ${port}${shared ? ' with Redis sessions' : ''}`));
     process.on('SIGTERM', () => {
       server.close(async () => { if (shared) await shared.client.quit(); process.exit(0); });
       setTimeout(() => process.exit(1), 10000).unref();

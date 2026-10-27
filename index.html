@@ -7,6 +7,7 @@
   <title>Log in · 8LM</title>
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
+  <script src="builder.js" defer></script>
 </head>
 <body>
   <main class="shell">
@@ -40,6 +41,7 @@
             <div id="client-picker" hidden><label for="client-account">Client account</label><select id="client-account"></select></div>
             <p id="dashboard-status" role="status" aria-live="polite"></p>
             <div id="dashboard-data" hidden>
+              <button type="button" class="submit create-campaign" id="create-campaign">Create Search campaign</button>
               <div id="metric-cards" class="metric-grid"></div>
               <section class="campaign-section"><div class="campaign-heading"><div><h2>Campaigns <span id="campaign-count" class="count-badge"></span></h2><p class="section-description">Performance across your campaigns</p></div><div class="table-controls"><label for="campaign-status" class="sr-only">Campaign status</label><select id="campaign-status"><option value="ALL">All statuses</option><option value="ENABLED">Enabled</option><option value="PAUSED">Paused</option></select><label for="campaign-search" class="sr-only">Search campaigns</label><input id="campaign-search" type="search" placeholder="Search campaigns"></div></div>
               <div class="table-scroll" tabindex="0" role="region" aria-label="Campaign performance"><table><thead><tr><th scope="col">Campaign</th><th scope="col">Status</th><th scope="col">Impressions</th><th scope="col">Clicks</th><th scope="col">CTR</th><th scope="col">Spend</th><th scope="col">Avg. CPC</th><th scope="col">Conversions</th></tr></thead><tbody id="campaign-rows"></tbody></table></div>
@@ -55,5 +57,28 @@
     </section>
     <footer>© <span id="year">2026</span> 8LM</footer>
   </main>
+  <dialog id="campaign-builder" aria-labelledby="builder-title">
+    <div class="builder-header"><div><h2 id="builder-title">Create Search campaign</h2><p>Draft in 8LM. Publish to Google Ads when ready.</p></div><button type="button" id="close-builder" aria-label="Close campaign builder">×</button></div>
+    <p id="builder-context"></p>
+    <form id="campaign-form">
+      <div class="builder-grid">
+        <label>Campaign name<input name="name" required maxlength="100"></label>
+        <label>Ad group name<input name="adGroup" required maxlength="100" value="Ad group 1"></label>
+        <label>Average daily budget<input name="budget" required type="number" min="0.01" max="1000000" step="0.01"></label>
+        <label>Maximum CPC bid<input name="bid" required type="number" min="0.01" max="1000000" step="0.01"></label>
+        <label>Target country<select name="location" required><option value="">Choose country</option><option value="2356">India</option><option value="2840">United States</option><option value="2826">United Kingdom</option></select></label>
+        <label>Keyword match<select name="matchType"><option value="PHRASE">Phrase</option><option value="EXACT">Exact</option></select></label>
+      </div>
+      <label>Landing page URL<input name="url" type="url" required placeholder="https://example.com"></label>
+      <label>Keywords · one per line<textarea name="keywords" required rows="3" placeholder="One to 50 keywords"></textarea></label>
+      <label>Headlines · one per line<textarea name="headlines" required rows="3" placeholder="3–15 unique headlines, up to 30 characters each"></textarea></label>
+      <label>Descriptions · one per line<textarea name="descriptions" required rows="3" placeholder="2–4 unique descriptions, up to 90 characters each"></textarea></label>
+      <label>Does this campaign contain EU political advertising?<select name="political" required><option value="">Choose an answer</option><option value="NO">No</option></select></label>
+      <p class="connection-note">Search only · English · Manual CPC · People in your selected country. Search partners and Display are off. EU political ads are not supported in this builder. Google may spend above the average daily budget on individual days once you enable the campaign.</p>
+      <button class="submit" type="submit">Save draft & review</button>
+    </form>
+    <section id="draft-review" hidden><h3>Review your campaign</h3><dl id="review-fields"></dl><p id="publish-note">Publish creates a paused campaign, one ad group, keywords, and one responsive search ad. It cannot spend until enabled in Google Ads. Google reviews ads before they can serve.</p><button type="button" id="new-draft" class="google-button" hidden>Create another campaign</button><button type="button" id="edit-draft" class="google-button">Edit draft</button><button type="button" id="publish-draft" class="submit">Publish paused campaign to Google Ads</button></section>
+    <p id="builder-status" role="status" aria-live="polite"></p>
+  </dialog>
 </body>
 </html>

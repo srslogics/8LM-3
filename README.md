@@ -53,3 +53,11 @@ Selecting an account opens campaign performance with spend, impressions, clicks,
 Reporting uses server-side Google Ads SearchStream queries and handles all response batches. Manager accounts show an enabled-client selector; the server checks the manager's current client list before accessing a client with the login-customer-id header. Access and reporting failures show errors instead of zero metrics. Reloading defaults to the selected account and last 30 days; manager client choice and date filters are not persisted.
 
 Run `npm test` for mocked OAuth, reporting calculations, reporting failures, range validation and cross-account access checks. Live data verification requires the deployed service and an authorized user session.
+
+## Search campaign builder
+
+Use Create Search campaign on a client dashboard. The builder supports one current draft per Google user/account, one ad group and responsive search ad, manual CPC, phrase/exact keywords, English, and country targeting for India, United States or United Kingdom. Drafts use Redis when configured; without it, they are temporary and single-process. Creating another draft replaces the current draft record, not the Google campaign.
+
+Review budget (account currency), bid, creative and targeting, then explicitly publish. The server rechecks client access, validates the draft and sends validateOnly to Google before one atomic mutation. Campaigns are always PAUSED; enabling/spending is not supported here. Google policy review and account permissions still apply.
+
+Publication locks block concurrent requests. Ambiguous network outcomes remain blocked rather than retrying and risking duplicates; check Google Ads for the unique [8LM draft-ID] campaign-name suffix before administrator reconciliation. Do not delete a publication lock until confirming the outcome. Live campaign creation has not been executed during development. Tests cover draft validation, mutation assembly, amount conversion and local repository locking; production Redis and Google mutation require deployment verification.
