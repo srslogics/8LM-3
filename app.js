@@ -79,6 +79,7 @@ async function initSession() {
   try {
     const state = await api('/api/session'); csrfToken = state.csrf;
     if (!state.user) return;
+    document.body.classList.remove('auth-mode');
     document.querySelector('#login-content').hidden = true;
     document.querySelector('#account-content').hidden = false;
     document.querySelector('#login-title').textContent = 'Your Google Ads';
