@@ -15,12 +15,24 @@
       <div class="form-wrap">
         <h1 id="login-title">Log in</h1>
         <p class="subtitle">Welcome back to 8LM.</p>
+        <div id="login-content">
+        <a class="google-button" href="/auth/google">Continue with Google</a>
+        <div class="divider">or</div>
         <form id="login-form">
           <div class="field"><label for="identity">Username or email</label><input id="identity" name="username" type="text" placeholder="Enter your username or email" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
           <div class="field"><label for="password">Password</label><div class="password-wrap"><input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required><button class="password-toggle" id="password-toggle" type="button" aria-label="Show password" aria-controls="password" aria-pressed="false">Show</button></div></div>
           <button class="submit" type="submit">Log in</button>
           <p id="form-status" class="form-status" role="status" aria-live="polite"></p>
         </form>
+        </div>
+        <div id="account-content" hidden>
+          <p id="signed-in-email" class="subtitle"></p>
+          <a class="google-button" href="/auth/google?connect=ads" id="connect-ads">Connect Google Ads</a>
+          <p class="connection-note">Google Ads requests permission to view and manage your accounts. This app currently only lists accounts.</p>
+          <div id="ads-accounts"></div>
+          <button type="button" id="logout" class="text-button">Sign out</button>
+        </div>
+        <p id="connection-status" class="form-status" role="status" aria-live="polite"></p>
       </div>
     </section>
     <footer>© <span id="year">2026</span> 8LM</footer>
