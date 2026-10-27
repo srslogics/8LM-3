@@ -243,3 +243,20 @@ body.auth-mode h1 { font-family: Georgia, 'Times New Roman', serif; font-size: 6
 .auth-mode .form-status { color: #d5dccc; }
 .auth-mode button:focus-visible, .auth-mode a:focus-visible { outline-color: #d8e0c7; }
 @media(max-width:600px) { .auth-mode header { min-height: 76px; padding-inline: 24px; }body.auth-mode .login-panel { padding: 44px 26px 60px; }body.auth-mode h1 { font-size: 50px; }.auth-mode input { font-size: 16px; }.auth-mode footer { padding-inline: 24px; } }
+/* Consistent, visible action controls. */
+.text-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 11px 18px; border: 1px solid #c8d2c7; border-radius: 7px; background: #fffefa; color: #294b38; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 1px 2px #243b2510; cursor: pointer; transition: background .15s, border-color .15s, box-shadow .15s; }
+.text-button:hover { background: #edf2e8; border-color: #8fa68d; box-shadow: 0 2px 5px #243b2512; }
+.dashboard-mode #change-account, .dashboard-mode #logout { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 11px 18px; margin: 12px 10px 0 0; border: 1px solid #b8c8b6; border-radius: 7px; background: #fffefa; color: #294b38; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 1px 2px #243b2510; }
+.dashboard-mode #change-account:hover { background: #edf2e8; border-color: #8fa68d; }
+#logout, .dashboard-mode #logout { background: #263e32; color: #fffdf5; border-color: #263e32; }
+#logout:hover, .dashboard-mode #logout:hover { background: #172f23; border-color: #172f23; }
+.google-button, .submit { cursor: pointer; transition: background .15s, border-color .15s, box-shadow .15s; }
+.dashboard-controls .google-button { border-color: #b8c8b6; color: #294b38; font-weight: 600; min-height: 44px; }
+.create-campaign { min-height: 44px; padding-inline: 20px; font-weight: 600; box-shadow: 0 2px 5px #244d3c18; }
+#edit-draft, #new-draft { min-height: 46px; border-color: #b8c8b6; font-weight: 600; }
+#close-builder { min-width: 44px; min-height: 44px; border: 1px solid #c7d1c1; background: #edf1e8; color: #294b38; cursor: pointer; }
+#close-builder:hover { background: #dfe8d8; }
+button:focus-visible, a:focus-visible { outline: 3px solid #5b7b54; outline-offset: 4px; }
+button:disabled { opacity: .55; box-shadow: none; cursor: wait; }
+@media(max-width:600px) { .dashboard-mode #change-account, .dashboard-mode #logout { min-height: 48px; padding-inline: 18px; } }
+@media(prefers-reduced-motion:reduce) { .text-button, .google-button, .submit { transition: none; } }
