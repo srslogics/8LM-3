@@ -13,11 +13,17 @@ export function normalizeCampaign(row) {
 }
 
 export function reportingError(error) {
-  const payload = error.response?.data?.error;
-  const details = Array.isArray(payload?.details) ? payload.details : [];
-  const codes = details.flatMap(detail => [detail.reason, ...(Array.isArray(detail.errors) ? detail.errors.flatMap(item => Object.values(item.errorCode || {})) : [])])
-    .filter(code => typeof code === 'string' && /^[A-Z][A-Z0-9_]{1,100}$/.test(code));
-  const code = codes[0] || (typeof payload?.status === 'string' && /^[A-Z_]{2,100}$/.test(payload.status) ? payload.status : 'REPORTING_FAILED');
+  let body = error.response?.data;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { body = null; }
+  }
+  // SearchStream may wrap failures in an array, unlike ordinary REST errors.
+  const envelopes = Array.isArray(body) ? body : [body];
+  const payloads = envelopes.map(item => item?.error || item).filter(item => item && typeof item === 'object');
+  const details = payloads.flatMap(payload => Array.isArray(payload.details) ? payload.details : []);
+  const validCode = code => typeof code === 'string' && /^[A-Z][A-Z0-9_]{1,100}$/.test(code);
+  const codes = details.flatMap(detail => [detail.reason, ...(Array.isArray(detail.errors) ? detail.errors.flatMap(item => Object.values(item.errorCode || {})) : [])]).filter(validCode);
+  const code = codes[0] || payloads.map(payload => payload.status).find(validCode) || 'REPORTING_FAILED';
   const guidance = {
     CLOUD_PROJECT_NOT_APPROVED_FOR_PRODUCTION: 'Your Google Cloud project has test-only Google Ads API access. Open Google Ads API Overview in project lm-3-demo and apply for Explorer or higher access to use real accounts.',
     DEVELOPER_TOKEN_NOT_APPROVED: 'Google Ads API access is limited to test accounts. Check the production access level for project lm-3-demo.',
