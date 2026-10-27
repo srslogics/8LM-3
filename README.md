@@ -61,3 +61,7 @@ Use Create Search campaign on a client dashboard. The builder supports one curre
 Review budget (account currency), bid, creative and targeting, then explicitly publish. The server rechecks client access, validates the draft and sends validateOnly to Google before one atomic mutation. Campaigns are always PAUSED; enabling/spending is not supported here. Google policy review and account permissions still apply.
 
 Publication locks block concurrent requests. Ambiguous network outcomes remain blocked rather than retrying and risking duplicates; check Google Ads for the unique [8LM draft-ID] campaign-name suffix before administrator reconciliation. Do not delete a publication lock until confirming the outcome. Live campaign creation has not been executed during development. Tests cover draft validation, mutation assembly, amount conversion and local repository locking; production Redis and Google mutation require deployment verification.
+
+## Remembered Google Ads connections
+
+With Redis configured, encrypted Google Ads credentials and selected account are also stored separately from the login session, keyed by verified Google subject and OAuth client ID. Signing out ends the login session; signing in again restores the Ads connection. Keep SESSION_SECRET stable. Redis data loss, revoked Google authorization, or expired refresh tokens still require reconnection. Existing sessions migrate when they next save connection state (for example, refreshing campaign data). Revoke access through Google Account permissions to invalidate a remembered grant.

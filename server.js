@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { validateDraft, campaignOperations, draftRepository } from './campaigns.js';
-import { connectSessionStore } from './session-store.js';
+import { connectSessionStore, encryptedSerializer } from './session-store.js';
 import { ranges, summarize, normalizeCampaign, reportingError } from './reporting.js';
 import express from 'express';
 import session from 'express-session';
@@ -13,7 +13,10 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 const ADS_SCOPE = 'https://www.googleapis.com/auth/adwords';
 const random = () => randomBytes(32).toString('hex');
 const equal = (a, b) => typeof a === 'string' && typeof b === 'string' && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
-const save = req => new Promise((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));
+const save = async req => {
+  await req.persistConnection?.();
+  return new Promise((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));
+};
 const regenerate = req => new Promise((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
 
 export function createApp(config = process.env, clientFactory, sessionStore, redis) {
@@ -23,6 +26,9 @@ export function createApp(config = process.env, clientFactory, sessionStore, red
   if (secure && (!config.SESSION_SECRET || config.SESSION_SECRET.length < 32)) throw new Error('Set SESSION_SECRET to a random value of at least 32 characters.');
   const ready = Boolean(config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET);
   const drafts = draftRepository(redis);
+  const connectionCipher = redis ? encryptedSerializer(config.SESSION_SECRET) : null;
+  const connectionKey = sub => `8lm:connection:${config.GOOGLE_CLIENT_ID}:${sub}`;
+  const loadConnection = async sub => { const raw = redis ? await redis.get(connectionKey(sub)) : null; return raw ? connectionCipher.parse(raw) : null; };
   const app = express();
   for (const method of ['get', 'post']) {
     const register = app[method].bind(app);
@@ -34,6 +40,15 @@ export function createApp(config = process.env, clientFactory, sessionStore, red
   app.use(express.json({ limit: '32kb' }));
   app.use(session({ ...(sessionStore ? { store: sessionStore } : {}), name: '8lm.sid', secret: config.SESSION_SECRET || random(), resave: false, saveUninitialized: false,
     cookie: { httpOnly: true, secure, sameSite: 'lax', maxAge: 8 * 60 * 60 * 1000 } }));
+  app.use((req, _res, next) => {
+    req.persistConnection = async () => {
+      if (redis && req.session.user && req.session.adsTokens) {
+        const value = { tokens: req.session.adsTokens, selectedAccount: req.session.selectedAccount || null };
+        await redis.set(connectionKey(req.session.user.sub), connectionCipher.stringify(value));
+      }
+    };
+    next();
+  });
   app.use(['/api', '/auth'], (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   const protect = (req, res, next) => req.session.user ? next() : res.status(401).json({ error: 'Please sign in again.' });
   const csrf = (req, res, next) => req.get('origin') === origin && equal(req.get('x-csrf-token'), req.session.csrf) ? next() : res.status(403).json({ error: 'Please refresh the page and try again.' });
@@ -70,13 +85,17 @@ export function createApp(config = process.env, clientFactory, sessionStore, red
       if (flow.ads) {
         if (profile.sub !== flow.sub || req.session.user?.sub !== flow.sub) return res.redirect('/?auth=wrong_account');
         if (!tokens.scope?.split(' ').includes(ADS_SCOPE)) return res.redirect('/?auth=ads_denied');
-        req.session.adsTokens = tokens;
+        const previous = await loadConnection(profile.sub);
+        req.session.adsTokens = { ...previous?.tokens, ...tokens };
+        if (!tokens.refresh_token && previous?.tokens?.refresh_token) req.session.adsTokens.refresh_token = previous.tokens.refresh_token;
         delete req.session.accounts;
         delete req.session.selectedAccount;
       } else {
         await regenerate(req);
         req.session.user = { sub: profile.sub, email: profile.email, name: profile.name || profile.email };
         req.session.csrf = random();
+        const connection = await loadConnection(profile.sub);
+        if (connection) { req.session.adsTokens = connection.tokens; req.session.selectedAccount = connection.selectedAccount; }
       }
       await save(req); res.redirect('/');
     } catch { res.redirect('/?auth=failed'); }

@@ -23,7 +23,9 @@ test('OAuth sign-in, Ads consent, account authorization and logout', async () =>
       return { data: [{ results: [{ campaign: { id: '1', name: 'Search', status: 'ENABLED', advertisingChannelType: 'SEARCH' }, metrics: { impressions: '100', clicks: '10', costMicros: '2500000', conversions: 1.5 } }] }] };
     }
   };
-  const app = createApp({ GOOGLE_CLIENT_ID: 'test', GOOGLE_CLIENT_SECRET: 'secret', APP_ORIGIN: 'http://localhost:8000' }, () => mock);
+  const stored = new Map();
+  const redis = { get: async key => stored.get(key), set: async (key, value) => stored.set(key, value) };
+  const app = createApp({ SESSION_SECRET: 's'.repeat(32), GOOGLE_CLIENT_ID: 'test', GOOGLE_CLIENT_SECRET: 'secret', APP_ORIGIN: 'http://localhost:8000' }, () => mock, undefined, redis);
   const server = app.listen(0, '127.0.0.1'); await new Promise(r => server.once('listening', r));
   let cookie = '';
   const call = async (path, body, csrf, origin = 'http://localhost:8000') => {
@@ -71,6 +73,12 @@ test('OAuth sign-in, Ads consent, account authorization and logout', async () =>
     assert.equal((await call('/api/logout', {}, session.csrf)).status, 200);
     assert.equal((await call('/api/ads/dashboard')).status, 401);
     assert.equal((await call('/api/ads/accounts')).status, 401);
+    assert.ok([...stored.values()].every(value => !value.includes('SECRET_TOKEN')));
+    await call('/auth/google');
+    await call(`/auth/google/callback?code=ok&state=${options.state}`);
+    const restored = await (await call('/api/session')).json();
+    assert.equal(restored.adsConnected, true);
+    assert.equal(restored.selectedAccount, '1234567890');
   } finally { server.closeAllConnections(); await new Promise(r => server.close(r)); }
 });
 test('hosted configuration requires a strong session secret', () => {
