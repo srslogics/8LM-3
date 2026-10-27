@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { connectSessionStore } from './session-store.js';
 import { ranges, summarize, normalizeCampaign } from './reporting.js';
 import express from 'express';
 import session from 'express-session';
@@ -14,7 +15,7 @@ const equal = (a, b) => typeof a === 'string' && typeof b === 'string' && Buffer
 const save = req => new Promise((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));
 const regenerate = req => new Promise((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
 
-export function createApp(config = process.env, clientFactory) {
+export function createApp(config = process.env, clientFactory, sessionStore) {
   const origin = new URL(config.APP_ORIGIN || 'http://localhost:8000').origin;
   clientFactory ||= () => new OAuth2Client(config.GOOGLE_CLIENT_ID, config.GOOGLE_CLIENT_SECRET, `${origin}/auth/google/callback`);
   const secure = origin.startsWith('https:');
@@ -29,9 +30,7 @@ export function createApp(config = process.env, clientFactory) {
   app.disable('x-powered-by');
   app.use(helmet({ contentSecurityPolicy: { directives: { 'upgrade-insecure-requests': secure ? [] : null } } }));
   app.use(express.json({ limit: '4kb' }));
-  // Initial single-instance release: sessions and Google tokens live only in server memory.
-  // A restart signs users out. Use a shared encrypted store before scaling to multiple instances.
-  app.use(session({ name: '8lm.sid', secret: config.SESSION_SECRET || random(), resave: false, saveUninitialized: false,
+  app.use(session({ ...(sessionStore ? { store: sessionStore } : {}), name: '8lm.sid', secret: config.SESSION_SECRET || random(), resave: false, saveUninitialized: false,
     cookie: { httpOnly: true, secure, sameSite: 'lax', maxAge: 8 * 60 * 60 * 1000 } }));
   app.use(['/api', '/auth'], (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   const protect = (req, res, next) => req.session.user ? next() : res.status(401).json({ error: 'Please sign in again.' });
@@ -150,5 +149,13 @@ export function createApp(config = process.env, clientFactory) {
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 8000);
-  createApp().listen(port, '0.0.0.0', () => console.log(`8LM listening on port ${port}`));
+  try {
+    const shared = await connectSessionStore(process.env);
+    if (!shared) console.warn('REDIS_URL is not configured; sessions remain temporary. Add Render Key Value to enable shared sessions.');
+    const server = createApp(process.env, undefined, shared?.store).listen(port, '0.0.0.0', () => console.log(`8LM listening on port ${port}${shared ? ' with Redis sessions' : ''}`));
+    process.on('SIGTERM', () => {
+      server.close(async () => { if (shared) await shared.client.quit(); process.exit(0); });
+      setTimeout(() => process.exit(1), 10000).unref();
+    });
+  } catch { console.error('Startup failed. Check REDIS_URL, SESSION_SECRET and APP_ORIGIN.'); process.exitCode = 1; }
 }

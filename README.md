@@ -38,7 +38,11 @@ Users choose Continue with Google, then Connect Google Ads. Ads consent must use
 
 OAuth state, PKCE, nonce and verified ID tokens protect sign-in. Session cookies are HttpOnly, SameSite=Lax and Secure on HTTPS. Tokens stay server-side. Account selection and logout require a same-origin CSRF token. Public files are allowlisted; secrets and source are not served.
 
-This initial single-instance version stores sessions and tokens in server memory for up to eight hours. Restarts, deploys and instance changes require sign-in/reconnection; selected accounts are not durable. Add an encrypted persistent token store and shared session store before multi-instance or unattended operation. Sign-out clears local session tokens; users can revoke Google's authorization in their Google Account permissions.
+With REDIS_URL configured, sessions and Google tokens are stored in Render Key Value with AES-256-GCM encryption derived from SESSION_SECRET and an eight-hour session expiry. Keep SESSION_SECRET stable across deployments and instances. Changing it invalidates existing sessions. Sign-out deletes the shared session. Without REDIS_URL, the app retains its temporary single-process fallback and prints a warning. A configured but unavailable Redis store fails startup rather than silently falling back.
+
+Create Render Key Value in the same workspace and region as the web service, then copy its internal connection URL into the web service's REDIS_URL environment variable. Save and redeploy. Paid Key Value supports disk-backed persistence; free-instance restarts can lose sessions. No Key Value resource is created by this repository. Keep the connection URL private. See https://render.com/docs/key-value.
+
+Sign-out clears local authorization; users can revoke Google's authorization in their Google Account permissions.
 
 Password-based login remains unimplemented; Google sign-in is the working authentication method. Live sign-in and Ads access require configured credentials, Google project permissions, and user consent; automated tests use mocked Google responses.
 
