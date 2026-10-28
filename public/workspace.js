@@ -1,16 +1,328 @@
+/* workspace.js – workspace management UI */
+
 let activeWorkspace;
-const roleNames=['Admin','Editor','Publisher','Viewer'];
-async function workspaceRequest(path,method='GET',body) { const r=await fetch('/api/workspaces'+path,{method,headers:{'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});let data;try{data=await r.json();}catch{data={error:'Action not permitted.'};}if(!r.ok)throw Error(data.error);return data; }
-function action(label,run){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=async()=>{b.disabled=true;try{await run();}catch(e){$('status').textContent=e.message;}finally{b.disabled=false;}};return b;}
-function row(parent,text){const d=document.createElement('div');d.className='member-row';const label=document.createElement('span');label.textContent=text;d.append(label);$(parent).append(d);return d;}
-async function loadWorkspaces(preferred){const {workspaces}=await workspaceRequest('');$('workspace-select').replaceChildren();for(const w of workspaces){const o=document.createElement('option');o.value=w.id;o.textContent=w.name;$('workspace-select').append(o);}activeWorkspace=workspaces.find(w=>w.id===Number(preferred))?.id||workspaces[0]?.id;if(activeWorkspace){$('workspace-select').value=activeWorkspace;await loadWorkspace();}}
-async function loadWorkspace(){const id=activeWorkspace;const data=await workspaceRequest('/'+id);if(id!==activeWorkspace)return;const w=data.workspace;const manage=['Owner','Admin'].includes(w.role);$('workspace-title').textContent=w.name;$('your-role').textContent=`Your role: ${w.role}`;$('workspace-actions').hidden=!manage;$('delete-workspace').hidden=w.role!=='Owner';$('invite-section').hidden=!manage;$('invite-link').hidden=true;$('invite-role').replaceChildren();for(const role of roleNames.filter(r=>w.role==='Owner'||r!=='Admin')){const o=document.createElement('option');o.value=role;o.textContent=role;$('invite-role').append(o);}$('invite-role').value='Viewer';for(const section of ['members','invites','activity'])$(section).replaceChildren();
-for(const m of data.members){const r=row('members',`${m.email} · ${m.role}`);if(manage&&m.role!=='Owner'&&(w.role==='Owner'||m.role!=='Admin')){const select=document.createElement('select');select.setAttribute('aria-label','Role for '+m.email);for(const role of roleNames.filter(role=>w.role==='Owner'||role!=='Admin')){const o=document.createElement('option');o.textContent=role;select.append(o);}select.value=m.role;r.append(select,action('Save role',async()=>{await workspaceRequest(`/${id}/members/${m.id}`,'PATCH',{role:select.value});await loadWorkspace();}),action('Remove',async()=>{if(confirm(`Remove ${m.email} from this workspace?`)){await workspaceRequest(`/${id}/members/${m.id}`,'DELETE');await loadWorkspace();}}));}if(w.role==='Owner'&&m.role!=='Owner')r.append(action('Make owner',async()=>{if(confirm(`Transfer ownership to ${m.email}? You will become an admin.`)){await workspaceRequest(`/${id}/transfer`,'POST',{user:m.id});await loadWorkspace();}}));}
-for(const inv of data.invites){const r=row('invites',`${inv.email} · ${inv.role}`);if(w.role==='Owner'||inv.role!=='Admin')r.append(action('Revoke',async()=>{await workspaceRequest(`/${id}/invites/${inv.id}`,'DELETE');await loadWorkspace();}));}if(!data.invites.length)row('invites',manage?'No pending invitations.':'Invitation details are available to workspace administrators.');for(const item of data.activity)row('activity',`${new Date(Number(item.created)).toLocaleString()} · ${item.actor} · ${item.action}`);
+const roleNames = ['Admin', 'Editor', 'Publisher', 'Viewer'];
+const $ = id => document.getElementById(id);
+
+/* ── API helper ──────────────────────────────────── */
+async function workspaceRequest(path, method = 'GET', body) {
+  const r = await fetch('/api/workspaces' + path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  let data;
+  try { data = await r.json(); } catch { data = { error: 'Action not permitted.' }; }
+  if (!r.ok) throw Error(data.error);
+  return data;
 }
-$('workspace-select').onchange=async e=>{activeWorkspace=Number(e.target.value);$('status').textContent='';try{await loadWorkspace();}catch(e){$('status').textContent=e.message;}};
-$('new-workspace').onclick=async()=>{const name=prompt('Workspace name');if(!name)return;try{const r=await workspaceRequest('','POST',{name});await loadWorkspaces(r.id);}catch(e){$('status').textContent=e.message;}};
-$('rename-workspace').onclick=async()=>{const name=prompt('New workspace name',$('workspace-title').textContent);if(!name)return;try{await workspaceRequest('/'+activeWorkspace,'PATCH',{name});await loadWorkspaces(activeWorkspace);}catch(e){$('status').textContent=e.message;}};
-$('delete-workspace').onclick=async()=>{const name=prompt(`Permanently delete workspace and its memberships, invitations and activity? Type "${$('workspace-title').textContent}" to confirm.`);if(name===null)return;try{await workspaceRequest('/'+activeWorkspace,'DELETE',{name});await loadWorkspaces();}catch(e){$('status').textContent=e.message;}};
-$('invite-form').onsubmit=async e=>{e.preventDefault();const id=activeWorkspace;try{const r=await workspaceRequest(`/${id}/invites`,'POST',{email:$('invite-email').value,role:$('invite-role').value});await loadWorkspace();if(activeWorkspace!==id)return;$('invite-link').hidden=false;$('invite-link').value=`${location.origin}/#invite=${r.token}`;$('invite-link').select();$('status').textContent='Invitation created. Copy and share this link privately.';}catch(e){$('status').textContent=e.message;}};
-window.addEventListener('signed-in',async()=>{try{const params=new URLSearchParams(location.hash.slice(1));const token=params.get('invite');let id;if(token){const result=await workspaceRequest('/accept','POST',{token});id=result.id;history.replaceState({},'',location.pathname);$('status').textContent='Invitation accepted.';}await loadWorkspaces(id);}catch(e){$('status').textContent=e.message;await loadWorkspaces().catch(()=>{});}});
+
+/* ── Role chip class ─────────────────────────────── */
+function roleClass(role) {
+  if (role === 'Owner') return 'role-chip owner';
+  if (role === 'Admin') return 'role-chip admin';
+  return 'role-chip';
+}
+
+/* ── Small action button ─────────────────────────── */
+function actionBtn(label, cls, run) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = label;
+  b.className = 'btn' + (cls ? ' ' + cls : '');
+  b.onclick = async () => {
+    b.disabled = true;
+    try { await run(); }
+    catch (e) { toast(e.message, 'error'); }
+    finally { b.disabled = false; }
+  };
+  return b;
+}
+
+/* ── Load workspace list ─────────────────────────── */
+async function loadWorkspaces(preferred) {
+  const { workspaces } = await workspaceRequest('');
+  $('workspace-select').replaceChildren();
+  for (const w of workspaces) {
+    const o = document.createElement('option');
+    o.value = w.id;
+    o.textContent = w.name;
+    $('workspace-select').append(o);
+  }
+  activeWorkspace = workspaces.find(w => w.id === Number(preferred))?.id || workspaces[0]?.id;
+  if (activeWorkspace) {
+    $('workspace-select').value = activeWorkspace;
+    await loadWorkspace();
+  }
+}
+
+/* ── Load single workspace ───────────────────────── */
+async function loadWorkspace() {
+  const id = activeWorkspace;
+  const data = await workspaceRequest('/' + id);
+  if (id !== activeWorkspace) return;
+
+  const w = data.workspace;
+  const manage = ['Owner', 'Admin'].includes(w.role);
+
+  /* Header */
+  $('workspace-title').textContent = w.name;
+  $('your-role').textContent = w.role;
+  $('your-role').className = roleClass(w.role);
+  $('workspace-actions').hidden = !manage;
+  $('delete-workspace').hidden = w.role !== 'Owner';
+  $('invite-section').hidden = !manage;
+  $('invite-link-area').hidden = true;
+
+  /* Invite roles */
+  $('invite-role').replaceChildren();
+  for (const role of roleNames.filter(r => w.role === 'Owner' || r !== 'Admin')) {
+    const o = document.createElement('option');
+    o.value = role;
+    o.textContent = role;
+    $('invite-role').append(o);
+  }
+  $('invite-role').value = 'Viewer';
+
+  /* ── Members table ────────────────────────────── */
+  const tbody = $('members');
+  tbody.replaceChildren();
+
+  for (const m of data.members) {
+    const tr = document.createElement('tr');
+
+    /* Email cell */
+    const tdEmail = document.createElement('td');
+    tdEmail.textContent = m.email;
+    tr.append(tdEmail);
+
+    /* Role cell */
+    const tdRole = document.createElement('td');
+    const canEdit = manage && m.role !== 'Owner' && (w.role === 'Owner' || m.role !== 'Admin');
+    if (canEdit) {
+      const sel = document.createElement('select');
+      sel.setAttribute('aria-label', 'Role for ' + m.email);
+      for (const role of roleNames.filter(r => w.role === 'Owner' || r !== 'Admin')) {
+        const o = document.createElement('option');
+        o.textContent = role;
+        sel.append(o);
+      }
+      sel.value = m.role;
+      tdRole.append(sel);
+      tr.append(tdRole);
+
+      /* Actions cell */
+      const tdActions = document.createElement('td');
+      const wrap = document.createElement('div');
+      wrap.className = 'row-actions';
+      wrap.append(
+        actionBtn('Save role', '', async () => {
+          await workspaceRequest(`/${id}/members/${m.id}`, 'PATCH', { role: sel.value });
+          toast('Role updated.', 'success');
+          await loadWorkspace();
+        }),
+        actionBtn('Remove', 'btn-danger', async () => {
+          if (confirm(`Remove ${m.email} from this workspace?`)) {
+            await workspaceRequest(`/${id}/members/${m.id}`, 'DELETE');
+            toast(`${m.email} removed.`);
+            await loadWorkspace();
+          }
+        }),
+      );
+      if (w.role === 'Owner' && m.role !== 'Owner') {
+        wrap.append(actionBtn('Transfer ownership', 'btn-danger', async () => {
+          if (confirm(`Transfer ownership to ${m.email}? You will become an Admin.`)) {
+            await workspaceRequest(`/${id}/transfer`, 'POST', { user: m.id });
+            toast('Ownership transferred.');
+            await loadWorkspace();
+          }
+        }));
+      }
+      tdActions.append(wrap);
+      tr.append(tdActions);
+    } else {
+      const chip = document.createElement('span');
+      chip.className = roleClass(m.role);
+      chip.textContent = m.role;
+      tdRole.append(chip);
+      tr.append(tdRole);
+      const tdActions = document.createElement('td');
+      tdActions.textContent = '—';
+      tr.append(tdActions);
+    }
+
+    tbody.append(tr);
+  }
+
+  if (!data.members.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 3;
+    td.innerHTML = '<div class="empty-state">No members.</div>';
+    tr.append(td);
+    tbody.append(tr);
+  }
+
+  /* ── Invites table ────────────────────────────── */
+  const invBody = $('invites');
+  invBody.replaceChildren();
+
+  for (const inv of data.invites) {
+    const tr = document.createElement('tr');
+
+    const tdEmail = document.createElement('td');
+    tdEmail.textContent = inv.email;
+    tr.append(tdEmail);
+
+    const tdRole = document.createElement('td');
+    const chip = document.createElement('span');
+    chip.className = roleClass(inv.role);
+    chip.textContent = inv.role;
+    tdRole.append(chip);
+    tr.append(tdRole);
+
+    const tdExp = document.createElement('td');
+    tdExp.textContent = new Date(Number(inv.expires)).toLocaleDateString();
+    tr.append(tdExp);
+
+    const tdActions = document.createElement('td');
+    if (w.role === 'Owner' || inv.role !== 'Admin') {
+      tdActions.append(actionBtn('Revoke', 'btn-danger', async () => {
+        await workspaceRequest(`/${id}/invites/${inv.id}`, 'DELETE');
+        toast('Invitation revoked.');
+        await loadWorkspace();
+      }));
+    } else {
+      tdActions.textContent = '—';
+    }
+    tr.append(tdActions);
+    invBody.append(tr);
+  }
+
+  if (!data.invites.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.innerHTML = `<div class="empty-state">${manage ? 'No pending invitations.' : 'Invitation details are visible to workspace administrators.'}</div>`;
+    tr.append(td);
+    invBody.append(tr);
+  }
+
+  /* ── Activity log ─────────────────────────────── */
+  const actDiv = $('activity');
+  actDiv.replaceChildren();
+
+  for (const item of data.activity) {
+    const d = document.createElement('div');
+    d.className = 'activity-item';
+    d.innerHTML = `
+      <div class="activity-dot"></div>
+      <div>
+        <div class="activity-text">${escHtml(item.actor)} · ${escHtml(item.action)}</div>
+        <div class="activity-time">${new Date(Number(item.created)).toLocaleString()}</div>
+      </div>`;
+    actDiv.append(d);
+  }
+
+  if (!data.activity.length) {
+    const d = document.createElement('div');
+    d.className = 'empty-state';
+    d.textContent = 'No activity yet.';
+    actDiv.append(d);
+  }
+}
+
+/* ── Tiny HTML escape ─────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ── Workspace selector ──────────────────────────── */
+$('workspace-select').onchange = async e => {
+  activeWorkspace = Number(e.target.value);
+  try { await loadWorkspace(); }
+  catch (e) { toast(e.message, 'error'); }
+};
+
+/* ── New workspace ───────────────────────────────── */
+$('new-workspace').onclick = async () => {
+  const name = prompt('Workspace name');
+  if (!name) return;
+  try {
+    const r = await workspaceRequest('', 'POST', { name });
+    await loadWorkspaces(r.id);
+    toast(`Workspace "${name}" created.`, 'success');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+/* ── Rename ──────────────────────────────────────── */
+$('rename-workspace').onclick = async () => {
+  const name = prompt('New workspace name', $('workspace-title').textContent);
+  if (!name) return;
+  try {
+    await workspaceRequest('/' + activeWorkspace, 'PATCH', { name });
+    await loadWorkspaces(activeWorkspace);
+    toast('Workspace renamed.', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+/* ── Delete ──────────────────────────────────────── */
+$('delete-workspace').onclick = async () => {
+  const wsName = $('workspace-title').textContent;
+  const name = prompt(`This will permanently delete the workspace and all its data.\n\nType "${wsName}" to confirm.`);
+  if (name === null) return;
+  try {
+    await workspaceRequest('/' + activeWorkspace, 'DELETE', { name });
+    toast('Workspace deleted.');
+    await loadWorkspaces();
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+/* ── Invite form ─────────────────────────────────── */
+$('invite-form').onsubmit = async e => {
+  e.preventDefault();
+  const id = activeWorkspace;
+  try {
+    const r = await workspaceRequest(`/${id}/invites`, 'POST', {
+      email: $('invite-email').value,
+      role: $('invite-role').value,
+    });
+    await loadWorkspace();
+    if (activeWorkspace !== id) return;
+    $('invite-link-area').hidden = false;
+    $('invite-link').value = `${location.origin}/#invite=${r.token}`;
+    $('invite-link').select();
+    toast('Invitation created. Copy and share the link privately.', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+/* ── Copy link button ────────────────────────────── */
+$('copy-link-btn').onclick = async () => {
+  const val = $('invite-link').value;
+  try {
+    await navigator.clipboard.writeText(val);
+    toast('Link copied to clipboard.', 'success');
+  } catch {
+    $('invite-link').select();
+    toast('Press Ctrl+C / Cmd+C to copy.');
+  }
+};
+
+/* ── Boot after sign-in ──────────────────────────── */
+window.addEventListener('signed-in', async () => {
+  try {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const token = params.get('invite');
+    let id;
+    if (token) {
+      const result = await workspaceRequest('/accept', 'POST', { token });
+      id = result.id;
+      history.replaceState({}, '', location.pathname);
+      toast('Invitation accepted.', 'success');
+    }
+    await loadWorkspaces(id);
+  } catch (e) {
+    toast(e.message, 'error');
+    await loadWorkspaces().catch(() => {});
+  }
+});

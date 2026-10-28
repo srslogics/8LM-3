@@ -1,10 +1,245 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Log in · 8LM</title><link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script><script src="/workspace.js" defer></script></head>
-<body><header><a href="/" aria-label="8LM home">8LM<span>.</span></a></header><main>
-<section id="auth"><h1 id="heading">Log in</h1><p id="intro">Enter your email and password.</p>
-<form id="form"><label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required maxlength="254">
-<label for="password">Password</label><div class="password"><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128"><button id="show" type="button" aria-label="Show password" aria-pressed="false">Show</button></div>
-<p id="hint" hidden>Use at least 12 characters.</p><button id="submit" class="primary" type="submit">Log in</button></form>
-<p class="switch"><span id="switch-label">New to 8LM?</span> <button id="switch" type="button">Create an account</button></p></section>
-<section id="account" hidden><span class="badge">Your workspace</span><h1 id="workspace-title">Workspaces</h1><p id="account-email"></p><div id="workspace-ui"><div class="toolbar"><select id="workspace-select" aria-label="Switch workspace"></select><button id="new-workspace" type="button">New workspace</button></div><p id="your-role"></p><div id="workspace-actions"><button id="rename-workspace">Rename</button><button id="delete-workspace">Delete workspace</button></div><section id="invite-section"><h2>Invite a member</h2><form id="invite-form"><label for="invite-email">Email address</label><input id="invite-email" type="email" required><label for="invite-role">Role</label><select id="invite-role"></select><button class="primary">Create invitation link</button></form><p>Share the link with the intended person. They must log in with the invited email. Links expire after seven days.</p><input id="invite-link" readonly hidden aria-label="Invitation link"></section><h2>Members</h2><div id="members"></div><h2>Pending invitations</h2><div id="invites"></div><h2>Recent activity</h2><div id="activity"></div><details><summary>What each role can do</summary><p>Owner: full workspace control. Admin: manage non-admin members. Editor: edit campaigns. Publisher: edit and publish campaigns. Viewer: read-only. Campaign permissions will apply when Google Ads is added.</p></details></div><button id="logout" class="primary" type="button">Sign out</button></section>
-<p id="status" role="status" aria-live="polite"></p></main><footer>8LM</footer></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>8LM Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+  <script src="/workspace.js" defer></script>
+</head>
+<body>
+
+<!-- ===================== AUTH SCREEN ===================== -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-brand-mark">8L</div>
+      <div class="auth-brand-name">8LM <span>Console</span></div>
+    </div>
+
+    <section id="auth">
+      <h1 id="heading">Log in</h1>
+      <p class="auth-subtitle" id="intro">Use your 8LM account to continue</p>
+
+      <form id="form">
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email"
+                 autocomplete="email" placeholder="you@example.com"
+                 required maxlength="254">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="password-wrap">
+            <input id="password" name="password" type="password"
+                   autocomplete="current-password" required maxlength="128">
+            <button id="show" type="button" aria-label="Show password" aria-pressed="false">Show</button>
+          </div>
+          <p id="hint" hidden>Use at least 12 characters.</p>
+        </div>
+
+        <button id="submit" class="btn-primary" type="submit">Sign in</button>
+      </form>
+
+      <p class="auth-switch">
+        <span id="switch-label">New to 8LM?</span>
+        <button id="switch" type="button">Create an account</button>
+      </p>
+
+      <p id="status" role="status" aria-live="polite"></p>
+    </section>
+  </div>
+</div>
+
+<!-- ===================== APP SHELL (after login) ===================== -->
+<div id="app-shell" hidden>
+
+  <!-- Top Navigation Bar -->
+  <nav id="topnav">
+    <a href="/" class="nav-logo" aria-label="8LM Console home">
+      <div class="nav-logo-mark">8L</div>
+      <span class="nav-logo-text">8LM <span>Console</span></span>
+    </a>
+
+    <div class="nav-divider"></div>
+    <span class="nav-product">Workspaces</span>
+    <div class="nav-spacer"></div>
+
+    <div class="nav-user">
+      <span id="nav-email"></span>
+      <div class="nav-avatar" id="nav-avatar" title="Account">?</div>
+      <button id="nav-signout-btn" type="button">Sign out</button>
+    </div>
+  </nav>
+
+  <div class="app-body">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-workspace-picker">
+        <label for="workspace-select">Project</label>
+        <select id="workspace-select" aria-label="Switch workspace"></select>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <button id="new-workspace" class="sidebar-btn" type="button">
+        <!-- plus icon -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New workspace
+      </button>
+
+      <div class="sidebar-divider"></div>
+
+      <span class="sidebar-section-label">Workspace</span>
+
+      <button class="sidebar-nav-item active" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Members &amp; access
+      </button>
+    </aside>
+
+    <!-- Main content -->
+    <main id="main-content">
+      <section id="account">
+
+        <!-- Page header -->
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="breadcrumb">8LM Console › Workspaces</div>
+            <h1 id="workspace-title">Loading…</h1>
+          </div>
+          <div class="page-header-right">
+            <span id="your-role" class="role-chip"></span>
+            <div id="workspace-actions" hidden style="display:flex;gap:8px;">
+              <button id="rename-workspace" class="btn" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Rename
+              </button>
+              <button id="delete-workspace" class="btn btn-danger" type="button" hidden>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                  <path d="M10 11v6"/><path d="M14 11v6"/>
+                  <path d="M9 6V4h6v2"/>
+                </svg>
+                Delete workspace
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invite card (owners/admins only) -->
+        <div class="gcp-card" id="invite-section" hidden>
+          <div class="gcp-card-header">
+            <h2>Invite member</h2>
+          </div>
+          <div class="gcp-card-body">
+            <form id="invite-form">
+              <div class="invite-grid">
+                <div class="field">
+                  <label for="invite-email">Email address</label>
+                  <input id="invite-email" type="email" required placeholder="colleague@example.com">
+                </div>
+                <div class="field">
+                  <label for="invite-role">Role</label>
+                  <select id="invite-role" style="width:100%;height:44px;border:1px solid var(--gcp-border);border-radius:4px;padding:0 8px;font:inherit;font-size:14px;color:var(--gcp-text);background:#fff;outline:none;"></select>
+                </div>
+                <button class="btn btn-filled" type="submit" style="margin-bottom:18px;">Create link</button>
+              </div>
+            </form>
+
+            <div id="invite-link-area" hidden>
+              <div class="invite-link-row">
+                <input id="invite-link" readonly aria-label="Invitation link" placeholder="">
+                <button class="btn" type="button" id="copy-link-btn">Copy</button>
+              </div>
+            </div>
+            <p class="invite-link-note">
+              Share the invitation link with the intended person. They must sign in with the invited email.
+              Links expire after 7 days. No email is sent automatically.
+            </p>
+          </div>
+        </div>
+
+        <!-- Members card -->
+        <div class="gcp-card">
+          <div class="gcp-card-header">
+            <h2>Members</h2>
+          </div>
+          <div class="gcp-card-body no-pad">
+            <table class="data-table" id="members-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="members"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pending invitations card -->
+        <div class="gcp-card">
+          <div class="gcp-card-header">
+            <h2>Pending invitations</h2>
+          </div>
+          <div class="gcp-card-body no-pad">
+            <table class="data-table" id="invites-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Expires</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="invites"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Activity card -->
+        <div class="gcp-card">
+          <div class="gcp-card-header">
+            <h2>Activity log</h2>
+          </div>
+          <div class="gcp-card-body no-pad">
+            <div class="activity-list" id="activity"></div>
+          </div>
+        </div>
+
+        <!-- Role guide -->
+        <details class="role-guide">
+          <summary>Role permissions</summary>
+          <p>
+            <strong>Owner</strong>: full workspace control, transfer, delete.<br>
+            <strong>Admin</strong>: manage non-admin/non-owner members.<br>
+            <strong>Editor</strong>: edit campaigns.<br>
+            <strong>Publisher</strong>: edit and publish campaigns.<br>
+            <strong>Viewer</strong>: read-only access.
+          </p>
+        </details>
+
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+</body>
+</html>
