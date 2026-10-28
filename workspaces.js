@@ -286,11 +286,11 @@ export function workspaceRoutes(app, db, session) {
       const now = Date.now();
       const expiresAt = now + (Number(tokens.expires_in) || 3600) * 1000;
       const email = profile.email || "ad-manager@gmail.com";
-      const name = profile.name || "Google Ads Account";
+      const name = profile.name || "Campaign Manager 360";
 
       await db.run(
         `INSERT INTO eightlm.oauth_tokens(workspace_id, provider, account_email, account_id, account_name, access_token, refresh_token, expires_at, connected_at)
-         VALUES($1, 'google', $2, 'Google Account', $3, $4, $5, $6, $7)
+         VALUES($1, 'google', $2, 'CM360 Account', $3, $4, $5, $6, $7)
          ON CONFLICT(workspace_id) DO UPDATE
            SET account_email=$2, account_name=$3, access_token=$4, refresh_token=COALESCE(NULLIF($5,''), eightlm.oauth_tokens.refresh_token), expires_at=$6, connected_at=$7`,
         wsId, email, name, tokens.access_token, tokens.refresh_token || '', expiresAt, now,
@@ -298,9 +298,9 @@ export function workspaceRoutes(app, db, session) {
 
       await db.run(
         `INSERT INTO eightlm.google_ads(workspace_id, customer_id, account_name, connected_by, connected_at, status, manager_id)
-         VALUES($1, $2, $3, (SELECT user_id FROM eightlm.members WHERE workspace_id=$1 AND role='Owner' LIMIT 1), $4, 'ACTIVE', 'Google Developer OAuth')
+         VALUES($1, $2, $3, (SELECT user_id FROM eightlm.members WHERE workspace_id=$1 AND role='Owner' LIMIT 1), $4, 'ACTIVE', 'Campaign Manager 360 OAuth')
          ON CONFLICT(workspace_id) DO UPDATE
-           SET customer_id=$2, account_name=$3, connected_at=$4, status='ACTIVE', manager_id='Google Developer OAuth'`,
+           SET customer_id=$2, account_name=$3, connected_at=$4, status='ACTIVE', manager_id='Campaign Manager 360 OAuth'`,
         wsId, email, name, now,
       );
 
