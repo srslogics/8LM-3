@@ -4,13 +4,24 @@ let activeWorkspace;
 const roleNames = ['Admin', 'Editor', 'Publisher', 'Viewer'];
 const $ = id => document.getElementById(id);
 
-/* ── API helper ──────────────────────────────────── */
+/* ── API helper (20 s timeout) ───────────────────── */
 async function workspaceRequest(path, method = 'GET', body) {
-  const r = await fetch('/api/workspaces' + path, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  let r;
+  try {
+    r = await fetch('/api/workspaces' + path, {
+      method,
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw Error('Request timed out. The database may be waking up — please retry.');
+    throw err;
+  }
+  clearTimeout(timer);
   let data;
   try { data = await r.json(); } catch { data = { error: 'Action not permitted.' }; }
   if (!r.ok) throw Error(data.error);
@@ -22,6 +33,21 @@ function roleClass(role) {
   if (role === 'Owner') return 'role-chip owner';
   if (role === 'Admin') return 'role-chip admin';
   return 'role-chip';
+}
+
+/* ── Load error with retry button ────────────────── */
+function showLoadError(msg) {
+  $('workspace-title').textContent = 'Could not load workspace';
+  const existing = $('retry-btn');
+  if (existing) existing.remove();
+  const btn = document.createElement('button');
+  btn.id = 'retry-btn';
+  btn.className = 'btn btn-filled';
+  btn.textContent = '↺ Retry';
+  btn.style.marginTop = '12px';
+  btn.onclick = () => loadWorkspaces(activeWorkspace).catch(() => {});
+  $('page-header-left').append(btn);
+  toast(msg, 'error');
 }
 
 /* ── Small action button ─────────────────────────── */
@@ -41,7 +67,16 @@ function actionBtn(label, cls, run) {
 
 /* ── Load workspace list ─────────────────────────── */
 async function loadWorkspaces(preferred) {
-  const { workspaces } = await workspaceRequest('');
+  $('workspace-title').textContent = 'Loading…';
+  $('retry-btn') && $('retry-btn').remove();
+  let workspaces;
+  try {
+    const res = await workspaceRequest('');
+    workspaces = res.workspaces;
+  } catch (e) {
+    showLoadError(e.message);
+    return;
+  }
   $('workspace-select').replaceChildren();
   for (const w of workspaces) {
     const o = document.createElement('option');
@@ -53,13 +88,21 @@ async function loadWorkspaces(preferred) {
   if (activeWorkspace) {
     $('workspace-select').value = activeWorkspace;
     await loadWorkspace();
+  } else {
+    $('workspace-title').textContent = 'No workspaces';
   }
 }
 
 /* ── Load single workspace ───────────────────────── */
 async function loadWorkspace() {
   const id = activeWorkspace;
-  const data = await workspaceRequest('/' + id);
+  let data;
+  try {
+    data = await workspaceRequest('/' + id);
+  } catch (e) {
+    showLoadError(e.message);
+    return;
+  }
   if (id !== activeWorkspace) return;
 
   const w = data.workspace;
@@ -310,19 +353,18 @@ $('copy-link-btn').onclick = async () => {
 
 /* ── Boot after sign-in ──────────────────────────── */
 window.addEventListener('signed-in', async () => {
-  try {
-    const params = new URLSearchParams(location.hash.slice(1));
-    const token = params.get('invite');
-    let id;
-    if (token) {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const token = params.get('invite');
+  let id;
+  if (token) {
+    try {
       const result = await workspaceRequest('/accept', 'POST', { token });
       id = result.id;
       history.replaceState({}, '', location.pathname);
       toast('Invitation accepted.', 'success');
+    } catch (e) {
+      toast(e.message, 'error');
     }
-    await loadWorkspaces(id);
-  } catch (e) {
-    toast(e.message, 'error');
-    await loadWorkspaces().catch(() => {});
   }
+  await loadWorkspaces(id);
 });
