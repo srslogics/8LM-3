@@ -156,6 +156,16 @@
       <div class="sidebar-divider"></div>
       <span class="sidebar-section-label">Workspace</span>
 
+      <button class="sidebar-nav-item" id="nav-campaigns" data-view="campaigns" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        Campaigns
+        <span class="sidebar-badge" id="campaigns-sidebar-badge" hidden>0</span>
+      </button>
+
       <button class="sidebar-nav-item active" id="nav-members" data-view="members" type="button">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -272,6 +282,84 @@
              <strong>Publisher</strong>: edit and publish campaigns.<br>
              <strong>Viewer</strong>: read-only access.</p>
         </details>
+      </section>
+
+      <!-- ══════ VIEW: Campaigns ══════ -->
+      <section id="view-campaigns" class="page-view" hidden>
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="breadcrumb">8LM Console › Workspace › Campaigns</div>
+            <h1 id="campaigns-view-title">Campaigns</h1>
+          </div>
+          <div class="page-header-right">
+            <button id="campaigns-manage-sync-btn" class="btn btn-filled" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+              Manage Google Ads Sync
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="kpi-grid" id="campaigns-kpis">
+          <div class="gcp-card kpi-card">
+            <div class="kpi-label">Active Campaigns</div>
+            <div class="kpi-value" id="kpi-active-count">0</div>
+          </div>
+          <div class="gcp-card kpi-card">
+            <div class="kpi-label">Total Daily Budget</div>
+            <div class="kpi-value" id="kpi-total-budget">$0.00</div>
+          </div>
+          <div class="gcp-card kpi-card">
+            <div class="kpi-label">Est. Monthly Impressions</div>
+            <div class="kpi-value" id="kpi-impressions">0</div>
+          </div>
+          <div class="gcp-card kpi-card">
+            <div class="kpi-label">Est. Monthly Clicks</div>
+            <div class="kpi-value" id="kpi-clicks">0</div>
+          </div>
+        </div>
+
+        <!-- Empty state when no campaigns are fetched -->
+        <div class="gcp-card" id="campaigns-empty-state" hidden>
+          <div class="gcp-card-body" style="text-align:center;padding:48px 24px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-text-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            <h3 style="font-size:18px;font-weight:500;margin-bottom:8px;">No campaigns fetched yet</h3>
+            <p style="color:var(--gcp-text-2);font-size:14px;max-width:440px;margin:0 auto 20px;">
+              Select which campaigns from your connected Google Ads account should be fetched into this workspace.
+            </p>
+            <button class="btn btn-filled" id="campaigns-go-fetch-btn" type="button">
+              Select campaigns to fetch →
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Fetched Campaigns Table -->
+        <div class="gcp-card" id="campaigns-table-card">
+          <div class="gcp-card-header">
+            <h2>Fetched Campaigns in 8LM</h2>
+          </div>
+          <div class="gcp-card-body no-pad">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Campaign name</th>
+                  <th>Channel</th>
+                  <th>Google Ads status</th>
+                  <th>Daily budget</th>
+                  <th>Source</th>
+                  <th>8LM Status</th>
+                </tr>
+              </thead>
+              <tbody id="workspace-campaigns-body">
+                <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gcp-text-3);">Loading campaigns…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- ══════ VIEW: Google Ads ══════ -->

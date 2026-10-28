@@ -228,6 +228,13 @@ details.role-guide p { margin-top: 10px; color: var(--gcp-text-2); line-height: 
 .imported-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 100px; background: #e6f4ea; color: #137333; }
 .not-imported-badge { font-size: 12px; color: var(--gcp-text-3); }
 
+/* ── KPI Grid ────────────────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi-card { padding: 20px; }
+.kpi-label { font-size: 11px; font-weight: 500; color: var(--gcp-text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.kpi-value { font-size: 24px; font-weight: 600; color: var(--gcp-text); }
+
+
 
 /* ── Utilities ───────────────────────────────────── */
 [hidden] { display: none !important; }
