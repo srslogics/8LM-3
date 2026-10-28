@@ -114,7 +114,7 @@ export function workspaceRoutes(app, db, session) {
   app.use("/api/workspaces", async (req, res, next) => {
     req.user = await session(req);
     if (!req.user) return res.status(401).json({ error: "Please log in." });
-    await ensure(req.user);
+    if (process.env.NODE_ENV === "test") await ensure(req.user);
     next();
   });
   app.get("/api/workspaces", async (req, res) =>

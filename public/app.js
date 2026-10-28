@@ -81,13 +81,15 @@ let currentManage = false;
 
 function renderUser(user) {
   $('auth-screen').hidden = Boolean(user);
-  $('app-shell').hidden   = !user;
   $('password').value     = '';
   $('status').textContent = '';
   if (user) {
     $('nav-email').textContent  = user.email;
     $('nav-avatar').textContent = (user.email[0] || '?').toUpperCase();
     loadWorkspacesOnBoot();
+  } else {
+    $('app-shell').hidden = true;
+    hideOnboarding();
   }
 }
 
@@ -134,9 +136,109 @@ $('form').onsubmit = async ev => {
 };
 
 $('nav-signout-btn').onclick = async () => {
-  try { await request('/api/logout', {}); renderUser(null); }
-  catch (e) { toast(e.message, 'error'); }
+  try {
+    await request('/api/logout', {});
+    hideOnboarding();
+    renderUser(null);
+  } catch (e) {
+    toast(e.message, 'error');
+  }
 };
+
+/* ══════════════════════════════════════════════════
+   ONBOARDING: FIRST WORKSPACE (WHEN 0 WORKSPACES EXIST)
+   ══════════════════════════════════════════════════ */
+let pendingOnboardingName = '';
+
+function showOnboarding() {
+  const ob = $('onboarding-screen');
+  if (!ob) return;
+  pendingOnboardingName = '';
+  $('onboarding-step1').hidden = false;
+  $('onboarding-step2').hidden = true;
+  $('onboarding-ws-name').value = '';
+  $('onboarding-ads-id').value = '';
+  $('onboarding-ads-name').value = '';
+  ob.hidden = false;
+  setTimeout(() => $('onboarding-ws-name').focus(), 50);
+}
+
+function hideOnboarding() {
+  const ob = $('onboarding-screen');
+  if (ob) ob.hidden = true;
+}
+
+if ($('onboarding-form-step1')) {
+  $('onboarding-form-step1').onsubmit = (ev) => {
+    ev.preventDefault();
+    const name = $('onboarding-ws-name').value.trim();
+    if (!name) return;
+    pendingOnboardingName = name;
+    $('onboarding-step1').hidden = true;
+    $('onboarding-step2').hidden = false;
+    $('onboarding-ws-name-display').textContent = name;
+    setTimeout(() => $('onboarding-ads-id').focus(), 50);
+  };
+}
+
+if ($('onboarding-back-btn')) {
+  $('onboarding-back-btn').onclick = () => {
+    $('onboarding-step1').hidden = false;
+    $('onboarding-step2').hidden = true;
+    setTimeout(() => $('onboarding-ws-name').focus(), 50);
+  };
+}
+
+if ($('onboarding-skip-btn')) {
+  $('onboarding-skip-btn').onclick = async () => {
+    const name = pendingOnboardingName;
+    const btn = $('onboarding-skip-btn');
+    btn.disabled = true;
+    try {
+      const r = await workspaceRequest('', 'POST', { name });
+      hideOnboarding();
+      await loadWorkspaces(r.id);
+      showView('members');
+      toast('Workspace "' + name + '" created!', 'success');
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
+if ($('onboarding-connect-btn')) {
+  $('onboarding-connect-btn').onclick = async () => {
+    const name = pendingOnboardingName;
+    const rawId = $('onboarding-ads-id').value.trim();
+    const digits = rawId.replace(/-/g, '');
+    if (!/^\d{10}$/.test(digits)) {
+      toast('Enter a valid 10-digit Google Ads Customer ID (e.g. 123-456-7890).', 'error');
+      $('onboarding-ads-id').focus();
+      return;
+    }
+    const btn = $('onboarding-connect-btn');
+    btn.disabled = true;
+    btn.textContent = 'Setting up…';
+    try {
+      const r = await workspaceRequest('', 'POST', { name });
+      await workspaceRequest('/' + r.id + '/ads', 'POST', {
+        customer_id: rawId,
+        account_name: $('onboarding-ads-name').value.trim(),
+      });
+      hideOnboarding();
+      await loadWorkspaces(r.id);
+      showView('ads');
+      toast('Workspace "' + name + '" created and Google Ads connected!', 'success');
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Create & Finish';
+    }
+  };
+}
 
 /* ══════════════════════════════════════════════════
    WORKSPACES
@@ -179,7 +281,6 @@ function showLoadError(msg) {
 }
 
 async function loadWorkspaces(preferred) {
-  $('workspace-title').textContent = 'Loading…';
   const old = $('retry-btn');
   if (old) old.remove();
 
@@ -191,6 +292,17 @@ async function loadWorkspaces(preferred) {
     showLoadError(e.message);
     return;
   }
+
+  // If user has NO workspaces, show the first-time onboarding wizard!
+  if (!workspaces || workspaces.length === 0) {
+    $('app-shell').hidden = true;
+    showOnboarding();
+    return;
+  }
+
+  // User has at least one workspace: show app console
+  hideOnboarding();
+  $('app-shell').hidden = false;
 
   const sel = $('workspace-select');
   sel.replaceChildren();
@@ -205,8 +317,6 @@ async function loadWorkspaces(preferred) {
     sel.value = activeWs;
     await loadWorkspace();
     showView(currentView);
-  } else {
-    $('workspace-title').textContent = 'No workspaces';
   }
 }
 
@@ -230,7 +340,7 @@ async function loadWorkspace() {
   $('invite-section').hidden       = !manage;
   $('invite-link-area').hidden     = true;
 
-  // Update Google Ads connection status in background
+  // Check Google Ads status in background for sidebar badge
   loadAds(id, manage);
 
   /* Invite roles */
@@ -347,7 +457,7 @@ $('workspace-select').onchange = async e => {
 };
 
 /* ══════════════════════════════════════════════════
-   CREATE WORKSPACE WIZARD (Step 1: Name -> Step 2: Google Ads)
+   CREATE WORKSPACE WIZARD (MODAL FOR EXISTING USERS)
    ══════════════════════════════════════════════════ */
 let pendingWsName = '';
 
@@ -444,9 +554,7 @@ if ($('wizard-connect-ads')) {
     btn.disabled = true;
     btn.textContent = 'Creating…';
     try {
-      // 1. Create workspace
       const r = await workspaceRequest('', 'POST', { name });
-      // 2. Connect Google Ads
       await workspaceRequest('/' + r.id + '/ads', 'POST', {
         customer_id: rawId,
         account_name: $('wizard-ads-name').value.trim(),

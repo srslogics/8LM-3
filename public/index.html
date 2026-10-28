@@ -54,6 +54,70 @@
   </div>
 </div>
 
+<!-- ===================== ONBOARDING: FIRST WORKSPACE ===================== -->
+<div id="onboarding-screen" hidden style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100svh;background:var(--gcp-body-bg);padding:24px;">
+  <div class="auth-card" style="max-width: 480px;">
+    <!-- Step 1: Create Workspace -->
+    <div id="onboarding-step1">
+      <div class="auth-brand">
+        <div class="auth-brand-mark">8L</div>
+        <div class="auth-brand-name">8LM <span>Console</span></div>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--gcp-blue);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Step 1 of 2</div>
+      <h1 style="font-size:22px;font-weight:400;margin-bottom:8px;">Name your workspace</h1>
+      <p class="auth-subtitle" style="margin-bottom:24px;">To get started, create a workspace for your team or organization.</p>
+
+      <form id="onboarding-form-step1">
+        <div class="field">
+          <label for="onboarding-ws-name">Workspace name</label>
+          <input id="onboarding-ws-name" type="text" placeholder="e.g. Google, Acme Marketing" required maxlength="80" autocomplete="off">
+        </div>
+        <button class="btn-primary" type="submit" style="margin-top:16px;">Continue to Google Ads →</button>
+      </form>
+    </div>
+
+    <!-- Step 2: Connect Google Ads -->
+    <div id="onboarding-step2" hidden>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="8" fill="#FABC04"/>
+          <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
+          <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
+          <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
+          <circle cx="8" cy="28" r="5" fill="#EA4335"/>
+          <circle cx="32" cy="28" r="5" fill="#3C8BDC"/>
+        </svg>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--gcp-blue);text-transform:uppercase;letter-spacing:0.8px;">Step 2 of 2</div>
+          <h2 style="font-size:18px;font-weight:500;margin:0;">Connect Google Ads</h2>
+        </div>
+      </div>
+      <p style="color:var(--gcp-text-2);font-size:13px;line-height:1.5;margin-bottom:20px;">
+        Optionally link your Google Ads account to manage campaigns from <strong id="onboarding-ws-name-display">your workspace</strong>.
+      </p>
+
+      <div class="field">
+        <label for="onboarding-ads-id">Google Ads Customer ID</label>
+        <input id="onboarding-ads-id" type="text" placeholder="123-456-7890" pattern="[\d-]{10,13}" maxlength="13" style="font-family:monospace;letter-spacing:0.5px;">
+        <p style="font-size:11px;color:var(--gcp-text-3);margin-top:4px;">10-digit Customer ID (e.g. 123-456-7890). Leave blank to skip.</p>
+      </div>
+
+      <div class="field">
+        <label for="onboarding-ads-name">Account nickname <span style="font-weight:400;color:var(--gcp-text-3);">(optional)</span></label>
+        <input id="onboarding-ads-name" type="text" placeholder="e.g. Brand campaigns" maxlength="120">
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;">
+        <button id="onboarding-back-btn" class="btn" type="button">← Back</button>
+        <div style="display:flex;gap:8px;">
+          <button id="onboarding-skip-btn" class="btn" type="button">Skip for now</button>
+          <button id="onboarding-connect-btn" class="btn btn-filled" type="button">Create &amp; Finish</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== APP SHELL ===================== -->
 <div id="app-shell" hidden>
 
