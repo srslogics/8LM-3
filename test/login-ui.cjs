@@ -1,0 +1,14 @@
+const { readFileSync } = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const elements = new Map();
+const get = id => { if (!elements.has(id)) elements.set(id, { value:'', textContent:'', hidden:false, setAttribute(){} }); return elements.get(id); };
+const context = vm.createContext({ document:{ getElementById:get, body:{classList:{toggle(){}}}}, window:{dispatchEvent(){}}, Event:class{}, fetch:async()=>({ok:true,json:async()=>({user:null})}) });
+vm.runInContext(readFileSync('public/app.js','utf8'),context);
+get('switch').onclick();
+assert.equal(get('heading').textContent,'Create an account');
+assert.equal(get('password').minLength,12);
+get('switch').onclick();
+assert.equal(get('heading').textContent,'Log in');
+assert.equal(get('password').autocomplete,'current-password');
+console.log('Signup/login screen switching passed without JavaScript errors.');
