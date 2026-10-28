@@ -7,6 +7,7 @@ const $ = id => document.getElementById(id);
 let toastTimer;
 function toast(msg, type) {
   const el = $('toast');
+  if (!el) return;
   el.textContent = msg;
   el.className = 'show' + (type ? ' ' + type : '');
   clearTimeout(toastTimer);
@@ -50,7 +51,7 @@ async function workspaceRequest(path, method, body) {
 }
 
 /* ══════════════════════════════════════════════════
-   VIEW ROUTING  (members | ads)
+   VIEW ROUTING (members | ads)
    ══════════════════════════════════════════════════ */
 let currentView = 'members';
 
@@ -65,11 +66,6 @@ function showView(view) {
   const navAds = $('nav-ads');
   if (navMembers && navMembers.classList) navMembers.classList.toggle('active', view === 'members');
   if (navAds && navAds.classList) navAds.classList.toggle('active', view === 'ads');
-
-  const sidebarSection = $('sidebar-integrations-section');
-  if (sidebarSection && view === 'ads') {
-    sidebarSection.hidden = false;
-  }
 
   if (view === 'ads') loadAds(activeWs, currentManage);
 }
@@ -208,7 +204,6 @@ async function loadWorkspaces(preferred) {
   if (activeWs) {
     sel.value = activeWs;
     await loadWorkspace();
-    // show view that was active (or default to members)
     showView(currentView);
   } else {
     $('workspace-title').textContent = 'No workspaces';
@@ -234,6 +229,8 @@ async function loadWorkspace() {
   $('delete-workspace').hidden     = w.role !== 'Owner';
   $('invite-section').hidden       = !manage;
   $('invite-link-area').hidden     = true;
+
+  // Update Google Ads connection status in background
   loadAds(id, manage);
 
   /* Invite roles */
@@ -342,50 +339,132 @@ async function loadWorkspace() {
   }
 }
 
-/* ── Workspace controls ──────────────────────────── */
+/* ── Workspace selector ──────────────────────────── */
 $('workspace-select').onchange = async e => {
   activeWs = Number(e.target.value);
   try { await loadWorkspace(); showView(currentView); }
   catch (e) { toast(e.message, 'error'); }
 };
 
-$('new-workspace').onclick = async () => {
-  const name = prompt('Workspace name');
-  if (!name) return;
-  try {
-    const r = await workspaceRequest('', 'POST', { name });
-    await loadWorkspaces(r.id);
+/* ══════════════════════════════════════════════════
+   CREATE WORKSPACE WIZARD (Step 1: Name -> Step 2: Google Ads)
+   ══════════════════════════════════════════════════ */
+let pendingWsName = '';
 
-    // First they make their workspace, then Google Ads gets visible!
-    const sidebarSection = $('sidebar-integrations-section');
-    if (sidebarSection) sidebarSection.hidden = false;
-    showView('ads');
-    const banner = $('ads-onboarding-banner');
-    if (banner) banner.hidden = false;
-    const txt = $('ads-onboarding-text');
-    if (txt) txt.textContent = 'Workspace "' + name + '" created! Connect your Google Ads account to complete setup.';
-    toast('Workspace "' + name + '" created.', 'success');
-  } catch (e) { toast(e.message, 'error'); }
-};
+function openCreateWizard() {
+  const modal = $('create-ws-modal');
+  if (!modal) return;
+  pendingWsName = '';
+  $('create-ws-name').value = '';
+  $('wizard-ads-id').value = '';
+  $('wizard-ads-name').value = '';
 
-if ($('promo-connect-ads-btn')) {
-  $('promo-connect-ads-btn').onclick = () => {
-    const sidebarSection = $('sidebar-integrations-section');
-    if (sidebarSection) sidebarSection.hidden = false;
-    showView('ads');
-    const banner = $('ads-onboarding-banner');
-    if (banner) banner.hidden = true;
+  // Show Step 1
+  $('create-ws-step1').hidden = false;
+  $('create-ws-step2').hidden = true;
+  $('modal-step-label').textContent = 'Step 1 of 2';
+  $('create-modal-title').textContent = 'Create workspace';
+
+  modal.hidden = false;
+  setTimeout(() => $('create-ws-name').focus(), 50);
+}
+
+function closeCreateWizard() {
+  const modal = $('create-ws-modal');
+  if (modal) modal.hidden = true;
+}
+
+$('new-workspace').onclick = () => openCreateWizard();
+if ($('create-ws-close')) $('create-ws-close').onclick = () => closeCreateWizard();
+if ($('create-ws-cancel')) $('create-ws-cancel').onclick = () => closeCreateWizard();
+
+// Step 1: Continue to Step 2
+if ($('create-ws-next')) {
+  $('create-ws-next').onclick = () => {
+    const name = $('create-ws-name').value.trim();
+    if (!name) {
+      toast('Please enter a workspace name.');
+      $('create-ws-name').focus();
+      return;
+    }
+    pendingWsName = name;
+
+    // Transition to Step 2
+    $('create-ws-step1').hidden = true;
+    $('create-ws-step2').hidden = false;
+    $('modal-step-label').textContent = 'Step 2 of 2';
+    $('create-modal-title').textContent = 'Connect Google Ads to ' + name;
+    setTimeout(() => $('wizard-ads-id').focus(), 50);
   };
 }
 
-const skipAdsAction = () => {
-  const banner = $('ads-onboarding-banner');
-  if (banner) banner.hidden = true;
-  showView('members');
-};
-if ($('ads-skip-top-btn')) $('ads-skip-top-btn').onclick = skipAdsAction;
-if ($('ads-form-skip-btn')) $('ads-form-skip-btn').onclick = skipAdsAction;
+// Step 2: Go back to Step 1
+if ($('create-ws-back')) {
+  $('create-ws-back').onclick = () => {
+    $('create-ws-step1').hidden = false;
+    $('create-ws-step2').hidden = true;
+    $('modal-step-label').textContent = 'Step 1 of 2';
+    $('create-modal-title').textContent = 'Create workspace';
+    setTimeout(() => $('create-ws-name').focus(), 50);
+  };
+}
 
+// Step 2: Skip Google Ads connection
+if ($('wizard-skip-ads')) {
+  $('wizard-skip-ads').onclick = async () => {
+    const name = pendingWsName;
+    const btn = $('wizard-skip-ads');
+    btn.disabled = true;
+    try {
+      const r = await workspaceRequest('', 'POST', { name });
+      closeCreateWizard();
+      await loadWorkspaces(r.id);
+      showView('members');
+      toast('Workspace "' + name + '" created.', 'success');
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
+// Step 2: Connect Google Ads and Finish
+if ($('wizard-connect-ads')) {
+  $('wizard-connect-ads').onclick = async () => {
+    const name = pendingWsName;
+    const rawId = $('wizard-ads-id').value.trim();
+    const digits = rawId.replace(/-/g, '');
+    if (!/^\d{10}$/.test(digits)) {
+      toast('Enter a valid 10-digit Google Ads Customer ID (e.g. 123-456-7890).', 'error');
+      $('wizard-ads-id').focus();
+      return;
+    }
+    const btn = $('wizard-connect-ads');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+    try {
+      // 1. Create workspace
+      const r = await workspaceRequest('', 'POST', { name });
+      // 2. Connect Google Ads
+      await workspaceRequest('/' + r.id + '/ads', 'POST', {
+        customer_id: rawId,
+        account_name: $('wizard-ads-name').value.trim(),
+      });
+      closeCreateWizard();
+      await loadWorkspaces(r.id);
+      showView('ads');
+      toast('Workspace "' + name + '" created and Google Ads connected!', 'success');
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Create & Connect';
+    }
+  };
+}
+
+/* ── Rename & Delete Workspace ──────────────────── */
 $('rename-workspace').onclick = async () => {
   const name = prompt('New workspace name', $('workspace-title').textContent);
   if (!name) return;
@@ -407,6 +486,7 @@ $('delete-workspace').onclick = async () => {
   } catch (e) { toast(e.message, 'error'); }
 };
 
+/* ── Invites ─────────────────────────────────────── */
 $('invite-form').onsubmit = async ev => {
   ev.preventDefault();
   const id = activeWs;
@@ -446,21 +526,9 @@ async function loadAds(wsId, canManage) {
 
   const connected = Boolean(data.ads);
 
-  // Sidebar section: only visible if Google Ads is connected or user is currently on the ads page
-  const sidebarSection = $('sidebar-integrations-section');
-  if (sidebarSection) {
-    sidebarSection.hidden = !connected && currentView !== 'ads';
-  }
-
-  // Sidebar badge
+  // Badge in sidebar
   const badge = $('ads-sidebar-badge');
   if (badge) badge.hidden = !connected;
-
-  // Promo banner on view-members
-  const promo = $('ads-promo-banner');
-  if (promo) {
-    promo.hidden = connected || !canManage;
-  }
 
   if (!canManage && !connected) {
     // Non-admin, nothing connected — show info message
