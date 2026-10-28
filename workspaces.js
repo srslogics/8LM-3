@@ -1,4 +1,10 @@
 import { randomBytes, createHash } from "node:crypto";
+import {
+  isGoogleAdsConfigured,
+  getMissingGoogleAdsConfig,
+  sendManagerLinkInvitation,
+  checkManagerLinkStatus,
+} from "./google-ads.js";
 export function workspaceRoutes(app, db, session) {
   /* ── Google Ads connection routes (Option 1: MCC Manager Linking) ── */
 
@@ -44,8 +50,14 @@ export function workspaceRoutes(app, db, session) {
       "SELECT customer_id, account_name, connected_at, status, manager_id FROM eightlm.google_ads WHERE workspace_id=$1",
       req.params.id,
     );
+    const configured = isGoogleAdsConfigured();
     const defaultManager = process.env.GOOGLE_ADS_MANAGER_ID || "8LM MCC Manager";
-    res.json({ ads: row || null, manager_id: defaultManager });
+    res.json({
+      ads: row || null,
+      manager_id: defaultManager,
+      api_configured: configured,
+      missing_config: configured ? [] : getMissingGoogleAdsConfig(),
+    });
   });
 
   app.post("/api/workspaces/:id/ads", async (req, res) => {
@@ -62,6 +74,16 @@ export function workspaceRoutes(app, db, session) {
 
     const formatted = `${raw.slice(0,3)}-${raw.slice(3,6)}-${raw.slice(6)}`;
     const managerId = process.env.GOOGLE_ADS_MANAGER_ID || "8LM MCC Manager";
+
+    // If Google Ads API credentials are configured, dispatch real live invitation to Google Ads!
+    if (isGoogleAdsConfigured()) {
+      try {
+        await sendManagerLinkInvitation(raw);
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
+    }
+
     await db.run(
       `INSERT INTO eightlm.google_ads(workspace_id, customer_id, account_name, connected_by, connected_at, status, manager_id)
        VALUES($1,$2,$3,$4,$5,'PENDING',$6)
@@ -73,7 +95,13 @@ export function workspaceRoutes(app, db, session) {
       "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
       req.params.id, ctx.user.email, `MCC link request created for Customer ID ${formatted}`, Date.now(),
     );
-    res.json({ ok: true, customer_id: formatted, status: "PENDING", manager_id: managerId });
+    res.json({
+      ok: true,
+      customer_id: formatted,
+      status: "PENDING",
+      manager_id: managerId,
+      live_api: isGoogleAdsConfigured(),
+    });
   });
 
   app.post("/api/workspaces/:id/ads/verify", async (req, res) => {
@@ -85,12 +113,39 @@ export function workspaceRoutes(app, db, session) {
     const row = await db.get("SELECT customer_id FROM eightlm.google_ads WHERE workspace_id=$1", req.params.id);
     if (!row) return res.status(404).json({ error: "No Google Ads link request found." });
 
+    // If live API configured, check actual status from Google Ads!
+    if (isGoogleAdsConfigured()) {
+      try {
+        const live = await checkManagerLinkStatus(row.customer_id);
+        if (live.ok && live.status === "ACTIVE") {
+          await db.run("UPDATE eightlm.google_ads SET status='ACTIVE' WHERE workspace_id=$1", req.params.id);
+          await db.run(
+            "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
+            req.params.id, ctx.user.email, `Google Ads account ${row.customer_id} verified ACTIVE via API`, Date.now(),
+          );
+          return res.json({ ok: true, status: "ACTIVE" });
+        } else if (live.ok && live.status === "PENDING") {
+          return res.status(400).json({
+            error: "The invitation has not been accepted yet in Google Ads. Go to ads.google.com → Admin → Access & security → Managers and click Accept.",
+            status: "PENDING",
+          });
+        } else {
+          return res.status(400).json({
+            error: `Google Ads reports link status is ${live.status || "not found"}.`,
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
+    }
+
+    // Fallback/Demo verification when API credentials are not yet set
     await db.run("UPDATE eightlm.google_ads SET status='ACTIVE' WHERE workspace_id=$1", req.params.id);
     await db.run(
       "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
       req.params.id, ctx.user.email, `Google Ads account ${row.customer_id} link verified and active`, Date.now(),
     );
-    res.json({ ok: true, status: "ACTIVE" });
+    res.json({ ok: true, status: "ACTIVE", demo: true });
   });
 
   app.delete("/api/workspaces/:id/ads", async (req, res) => {

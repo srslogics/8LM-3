@@ -4,6 +4,7 @@ const files = [
   "server.js",
   "database.js",
   "database-config.js",
+  "google-ads.js",
   "workspaces.js",
   ...readdirSync("public")
     .filter((f) => f.endsWith(".js"))
