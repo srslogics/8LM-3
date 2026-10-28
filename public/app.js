@@ -637,21 +637,6 @@ async function loadAds(wsId, canManage) {
   const status = ads ? (ads.status || 'ACTIVE') : 'DISCONNECTED';
   const managerName = (ads && ads.manager_id) || data.manager_id || '8LM MCC Manager';
 
-  // API Status banner
-  const banner = $('ads-api-banner');
-  const bannerTitle = $('ads-api-banner-title');
-  const bannerDesc = $('ads-api-banner-desc');
-  if (banner && bannerTitle && bannerDesc) {
-    banner.hidden = false;
-    if (data.api_configured) {
-      bannerTitle.textContent = 'Live Google Ads API Connected';
-      bannerDesc.textContent = 'Active with Manager ID ' + managerName + '. Link invitations are automatically dispatched to Google Ads on submit.';
-    } else {
-      bannerTitle.textContent = 'Google Ads API Setup Required for Live Sync';
-      bannerDesc.textContent = 'To automatically send live invitations to Google Ads accounts, add these 5 variables in Render: GOOGLE_ADS_MANAGER_ID, GOOGLE_ADS_DEVELOPER_TOKEN, GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET, GOOGLE_ADS_REFRESH_TOKEN.';
-    }
-  }
-
   // Badge in sidebar
   const badge = $('ads-sidebar-badge');
   if (badge) {
@@ -717,15 +702,11 @@ $('ads-form').onsubmit = async ev => {
   btn.disabled = true;
   btn.textContent = 'Sending request…';
   try {
-    const res = await workspaceRequest('/' + activeWs + '/ads', 'POST', {
+    await workspaceRequest('/' + activeWs + '/ads', 'POST', {
       customer_id:  $('ads-customer-id').value,
       account_name: $('ads-account-name').value,
     });
-    if (res.live_api) {
-      toast('Live invitation sent to Google Ads! Check Managers tab.', 'success');
-    } else {
-      toast('Link saved. Configure API credentials on Render for live Google sync.', 'info');
-    }
+    toast('Link request sent! Please accept in your Google Ads dashboard.', 'success');
     await loadAds(activeWs, currentManage);
   } catch (e) {
     toast(e.message, 'error');
@@ -740,10 +721,10 @@ if ($('ads-verify-btn')) {
   $('ads-verify-btn').onclick = async () => {
     const btn = $('ads-verify-btn');
     btn.disabled = true;
-    btn.textContent = 'Checking Google Ads…';
+    btn.textContent = 'Verifying…';
     try {
-      const res = await workspaceRequest('/' + activeWs + '/ads/verify', 'POST');
-      toast(res.demo ? 'Google Ads account linked and active (Demo mode)!' : 'Google Ads account linked and active!', 'success');
+      await workspaceRequest('/' + activeWs + '/ads/verify', 'POST');
+      toast('Google Ads account linked and active!', 'success');
       await loadAds(activeWs, currentManage);
     } catch (e) {
       toast(e.message, 'error');
