@@ -1,6 +1,24 @@
 import { randomBytes, createHash } from "node:crypto";
 export function workspaceRoutes(app, db, session) {
-  /* ── Google Ads connection routes ───────────────── */
+  /* ── Google Ads connection routes (Option 1: MCC Manager Linking) ── */
+
+  // Ensure table and columns exist in Neon database
+  db.run(`
+    CREATE TABLE IF NOT EXISTS eightlm.google_ads (
+      workspace_id BIGINT PRIMARY KEY REFERENCES eightlm.workspaces(id) ON DELETE CASCADE,
+      customer_id TEXT NOT NULL,
+      account_name TEXT,
+      connected_by BIGINT REFERENCES eightlm.users(id),
+      connected_at BIGINT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'PENDING',
+      manager_id TEXT DEFAULT ''
+    )
+  `).then(() => {
+    return db.run(`
+      ALTER TABLE eightlm.google_ads ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'PENDING';
+      ALTER TABLE eightlm.google_ads ADD COLUMN IF NOT EXISTS manager_id TEXT DEFAULT '';
+    `);
+  }).catch(() => {});
 
   // GET  /api/workspaces/:id/ads  – read connection (any member)
   // POST /api/workspaces/:id/ads  – connect or update (owner/admin)
@@ -23,17 +41,18 @@ export function workspaceRoutes(app, db, session) {
     const ctx = await adsSession(req, res);
     if (!ctx) return;
     const row = await db.get(
-      "SELECT customer_id, account_name, connected_at FROM eightlm.google_ads WHERE workspace_id=$1",
+      "SELECT customer_id, account_name, connected_at, status, manager_id FROM eightlm.google_ads WHERE workspace_id=$1",
       req.params.id,
     );
-    res.json({ ads: row || null });
+    const defaultManager = process.env.GOOGLE_ADS_MANAGER_ID || "8LM MCC Manager";
+    res.json({ ads: row || null, manager_id: defaultManager });
   });
 
   app.post("/api/workspaces/:id/ads", async (req, res) => {
     const ctx = await adsSession(req, res);
     if (!ctx) return;
     if (!["Owner", "Admin"].includes(ctx.role))
-      return res.status(403).json({ error: "Only owners and admins can connect accounts." });
+      return res.status(403).json({ error: "Only owners and admins can link accounts." });
 
     // Normalise customer ID: accept 123-456-7890 or 1234567890
     const raw = typeof req.body.customer_id === "string" ? req.body.customer_id.replace(/-/g, "").trim() : "";
@@ -42,29 +61,47 @@ export function workspaceRoutes(app, db, session) {
       return res.status(400).json({ error: "Enter a valid 10-digit Google Ads Customer ID." });
 
     const formatted = `${raw.slice(0,3)}-${raw.slice(3,6)}-${raw.slice(6)}`;
+    const managerId = process.env.GOOGLE_ADS_MANAGER_ID || "8LM MCC Manager";
     await db.run(
-      `INSERT INTO eightlm.google_ads(workspace_id, customer_id, account_name, connected_by, connected_at)
-       VALUES($1,$2,$3,$4,$5)
+      `INSERT INTO eightlm.google_ads(workspace_id, customer_id, account_name, connected_by, connected_at, status, manager_id)
+       VALUES($1,$2,$3,$4,$5,'PENDING',$6)
        ON CONFLICT(workspace_id) DO UPDATE
-         SET customer_id=$2, account_name=$3, connected_by=$4, connected_at=$5`,
-      req.params.id, formatted, accountName, ctx.user.id, Date.now(),
+         SET customer_id=$2, account_name=$3, connected_by=$4, connected_at=$5, status='PENDING', manager_id=$6`,
+      req.params.id, formatted, accountName, ctx.user.id, Date.now(), managerId,
     );
     await db.run(
       "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
-      req.params.id, ctx.user.email, `Google Ads account ${formatted} connected`, Date.now(),
+      req.params.id, ctx.user.email, `MCC link request created for Customer ID ${formatted}`, Date.now(),
     );
-    res.json({ ok: true, customer_id: formatted });
+    res.json({ ok: true, customer_id: formatted, status: "PENDING", manager_id: managerId });
+  });
+
+  app.post("/api/workspaces/:id/ads/verify", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    if (!["Owner", "Admin"].includes(ctx.role))
+      return res.status(403).json({ error: "Only owners and admins can verify links." });
+    
+    const row = await db.get("SELECT customer_id FROM eightlm.google_ads WHERE workspace_id=$1", req.params.id);
+    if (!row) return res.status(404).json({ error: "No Google Ads link request found." });
+
+    await db.run("UPDATE eightlm.google_ads SET status='ACTIVE' WHERE workspace_id=$1", req.params.id);
+    await db.run(
+      "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
+      req.params.id, ctx.user.email, `Google Ads account ${row.customer_id} link verified and active`, Date.now(),
+    );
+    res.json({ ok: true, status: "ACTIVE" });
   });
 
   app.delete("/api/workspaces/:id/ads", async (req, res) => {
     const ctx = await adsSession(req, res);
     if (!ctx) return;
     if (!["Owner", "Admin"].includes(ctx.role))
-      return res.status(403).json({ error: "Only owners and admins can disconnect accounts." });
+      return res.status(403).json({ error: "Only owners and admins can unlink accounts." });
     await db.run("DELETE FROM eightlm.google_ads WHERE workspace_id=$1", req.params.id);
     await db.run(
       "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
-      req.params.id, ctx.user.email, "Google Ads account disconnected", Date.now(),
+      req.params.id, ctx.user.email, "Google Ads account unlinked", Date.now(),
     );
     res.json({ ok: true });
   });

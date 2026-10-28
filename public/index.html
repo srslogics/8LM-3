@@ -296,22 +296,22 @@
                 <circle cx="8" cy="28" r="6" fill="#EA4335"/>
                 <circle cx="32" cy="28" r="6" fill="#3C8BDC"/>
               </svg>
-              <h2 style="font-size:20px;font-weight:500;margin-bottom:8px;">Connect Google Ads</h2>
-              <p style="color:var(--gcp-text-2);font-size:14px;max-width:440px;margin:0 auto 28px;">
-                Link a Google Ads account to manage campaigns, budgets and performance directly from this workspace.
+              <h2 style="font-size:20px;font-weight:500;margin-bottom:8px;">Link Google Ads Account</h2>
+              <p style="color:var(--gcp-text-2);font-size:14px;max-width:500px;margin:0 auto 24px;">
+                Connect without Google Cloud Platform. Enter your 10-digit Google Ads Customer ID to send an MCC link request, then accept it in your Google Ads dashboard.
               </p>
               <div class="ads-connect-pills">
                 <div class="ads-pill">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Campaign management
+                  Zero GCP setup
                 </div>
                 <div class="ads-pill">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Budget tracking
+                  Manager (MCC) linking
                 </div>
                 <div class="ads-pill">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Role-based access
+                  Full campaign control
                 </div>
               </div>
             </div>
@@ -319,7 +319,7 @@
 
           <!-- Connect form card -->
           <div class="gcp-card" id="ads-form-card">
-            <div class="gcp-card-header"><h2>Account details</h2></div>
+            <div class="gcp-card-header"><h2>Send account link request</h2></div>
             <div class="gcp-card-body" style="max-width:560px;">
               <form id="ads-form">
                 <div class="field">
@@ -328,17 +328,17 @@
                          pattern="[\d-]{10,13}" maxlength="13" required
                          style="font-family:monospace;letter-spacing:1px;font-size:16px;height:48px;">
                   <p style="font-size:12px;color:var(--gcp-text-3);margin-top:6px;">
-                    Find this in Google Ads → Help → Customer ID. Format: 123-456-7890.
+                    Find this in the top right corner of Google Ads (Format: 123-456-7890).
                   </p>
                 </div>
                 <div class="field">
                   <label for="ads-account-name">Account nickname <span style="font-weight:400;color:var(--gcp-text-3)">(optional)</span></label>
-                  <input id="ads-account-name" type="text" placeholder="e.g. Brand campaigns" maxlength="120">
+                  <input id="ads-account-name" type="text" placeholder="e.g. Brand search campaigns" maxlength="120">
                 </div>
                 <div style="display:flex;gap:10px;margin-top:8px;">
                   <button class="btn btn-filled" type="submit" id="ads-connect-btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    Connect account
+                    Send link request
                   </button>
                 </div>
               </form>
@@ -346,7 +346,56 @@
           </div>
         </div>
 
-        <!-- Connected -->
+        <!-- Pending Link Approval State -->
+        <div id="ads-page-pending" hidden>
+          <div class="gcp-card">
+            <div class="gcp-card-header">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <svg width="20" height="20" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#FABC04"/><path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/><path d="M8 28H20V8L8 28Z" fill="#34A853"/><path d="M20 8L32 28H20V8Z" fill="#FABC04"/><circle cx="8" cy="28" r="5" fill="#EA4335"/><circle cx="32" cy="28" r="5" fill="#3C8BDC"/></svg>
+                <h2>Google Ads Link Request</h2>
+              </div>
+              <span class="ads-status-pending">Pending Approval</span>
+            </div>
+            <div class="gcp-card-body">
+              <div class="ads-info-grid">
+                <div class="ads-info-item">
+                  <div class="ads-info-label">Customer ID</div>
+                  <div class="ads-info-value mono" id="ads-pending-id"></div>
+                </div>
+                <div class="ads-info-item">
+                  <div class="ads-info-label">Account nickname</div>
+                  <div class="ads-info-value" id="ads-pending-name">—</div>
+                </div>
+                <div class="ads-info-item">
+                  <div class="ads-info-label">Manager Account</div>
+                  <div class="ads-info-value" id="ads-pending-manager">8LM MCC Manager</div>
+                </div>
+              </div>
+
+              <!-- Step-by-step instructions for the user -->
+              <div style="background:var(--gcp-body-bg);border:1px solid var(--gcp-border);border-radius:8px;padding:20px;margin-top:24px;">
+                <div style="font-weight:600;font-size:13px;color:var(--gcp-text);margin-bottom:10px;">
+                  Follow these 3 steps in your Google Ads account:
+                </div>
+                <ol style="padding-left:20px;font-size:13px;color:var(--gcp-text-2);line-height:2;">
+                  <li>Open <a href="https://ads.google.com" target="_blank" rel="noopener" style="color:var(--gcp-blue);font-weight:500;">Google Ads (ads.google.com)</a> in another tab.</li>
+                  <li>In the top menu, go to <strong>Admin → Access and security</strong>.</li>
+                  <li>Click the <strong>Managers</strong> tab, find the link request from <strong id="mcc-instruction-name">8LM</strong>, and click <strong>Accept</strong>.</li>
+                </ol>
+              </div>
+
+              <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--gcp-border);">
+                <button class="btn btn-filled" id="ads-verify-btn" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Check status / Link accepted
+                </button>
+                <button class="btn btn-danger" id="ads-cancel-pending-btn" type="button">Cancel link request</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connected (Active) -->
         <div id="ads-page-connected" hidden>
           <div class="gcp-card">
             <div class="gcp-card-header">
@@ -354,7 +403,7 @@
                 <svg width="20" height="20" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#FABC04"/><path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/><path d="M8 28H20V8L8 28Z" fill="#34A853"/><path d="M20 8L32 28H20V8Z" fill="#FABC04"/><circle cx="8" cy="28" r="5" fill="#EA4335"/><circle cx="32" cy="28" r="5" fill="#3C8BDC"/></svg>
                 <h2>Google Ads account</h2>
               </div>
-              <span class="ads-status-connected">Connected</span>
+              <span class="ads-status-connected">Active &amp; Linked</span>
             </div>
             <div class="gcp-card-body">
               <div class="ads-info-grid">
@@ -372,8 +421,7 @@
                 </div>
               </div>
               <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--gcp-border);">
-                <button class="btn" id="ads-edit-btn" type="button">Edit details</button>
-                <button class="btn btn-danger" id="ads-disconnect-btn" type="button">Disconnect account</button>
+                <button class="btn btn-danger" id="ads-disconnect-btn" type="button">Unlink account</button>
               </div>
             </div>
           </div>

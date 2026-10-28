@@ -230,7 +230,7 @@ if ($('onboarding-connect-btn')) {
       hideOnboarding();
       await loadWorkspaces(r.id);
       showView('ads');
-      toast('Workspace "' + name + '" created and Google Ads connected!', 'success');
+      toast('Workspace "' + name + '" created! Please approve the link in Google Ads.', 'success');
     } catch (e) {
       toast(e.message, 'error');
     } finally {
@@ -562,7 +562,7 @@ if ($('wizard-connect-ads')) {
       closeCreateWizard();
       await loadWorkspaces(r.id);
       showView('ads');
-      toast('Workspace "' + name + '" created and Google Ads connected!', 'success');
+      toast('Workspace "' + name + '" created! Please approve the link in Google Ads.', 'success');
     } catch (e) {
       toast(e.message, 'error');
     } finally {
@@ -623,7 +623,7 @@ $('copy-link-btn').onclick = async () => {
 };
 
 /* ══════════════════════════════════════════════════
-   GOOGLE ADS PAGE
+   GOOGLE ADS PAGE (OPTION 1: MCC MANAGER LINKING)
    ══════════════════════════════════════════════════ */
 
 async function loadAds(wsId, canManage) {
@@ -632,86 +632,134 @@ async function loadAds(wsId, canManage) {
   try { data = await workspaceRequest('/' + wsId + '/ads'); }
   catch (e) { return; }
 
-  const connected = Boolean(data.ads);
+  const ads = data.ads;
+  const isLinked = Boolean(ads);
+  const status = ads ? (ads.status || 'ACTIVE') : 'DISCONNECTED';
+  const managerName = (ads && ads.manager_id) || data.manager_id || '8LM MCC Manager';
 
   // Badge in sidebar
   const badge = $('ads-sidebar-badge');
-  if (badge) badge.hidden = !connected;
-
-  if (!canManage && !connected) {
-    // Non-admin, nothing connected — show info message
-    $('ads-page-disconnected').hidden  = true;
-    $('ads-page-connected').hidden     = true;
-    $('ads-no-permission').hidden      = false;
-    $('ads-no-permission-msg').textContent = 'No Google Ads account has been connected to this workspace yet. Ask an owner or admin to connect one.';
-    return;
+  if (badge) {
+    badge.hidden = !isLinked;
+    if (status === 'ACTIVE') {
+      badge.textContent = 'Active';
+      badge.className = 'sidebar-badge';
+    } else {
+      badge.textContent = 'Pending';
+      badge.className = 'sidebar-badge pending';
+    }
   }
 
-  if (!canManage && connected) {
-    // Non-admin, connected — show read-only info
-    $('ads-page-disconnected').hidden  = true;
-    $('ads-page-connected').hidden     = false;
-    $('ads-no-permission').hidden      = true;
-    renderAdsConnected(data.ads);
-    $('ads-edit-btn').hidden           = true;
-    $('ads-disconnect-btn').hidden     = true;
-    return;
-  }
-
-  // Admin/Owner
-  $('ads-no-permission').hidden = true;
-  if (connected) {
+  if (!canManage && !isLinked) {
     $('ads-page-disconnected').hidden = true;
+    $('ads-page-pending').hidden      = true;
+    $('ads-page-connected').hidden    = true;
+    $('ads-no-permission').hidden     = false;
+    $('ads-no-permission-msg').textContent = 'No Google Ads account has been linked to this workspace yet. Ask an owner or admin to link one.';
+    return;
+  }
+
+  $('ads-no-permission').hidden = true;
+
+  if (status === 'PENDING') {
+    // Show Pending Approval state
+    $('ads-page-disconnected').hidden = true;
+    $('ads-page-pending').hidden      = false;
+    $('ads-page-connected').hidden    = true;
+
+    $('ads-pending-id').textContent      = ads.customer_id;
+    $('ads-pending-name').textContent    = ads.account_name || '—';
+    $('ads-pending-manager').textContent = managerName;
+    const inst = $('mcc-instruction-name');
+    if (inst) inst.textContent = managerName;
+
+    if ($('ads-verify-btn')) $('ads-verify-btn').hidden = !canManage;
+    if ($('ads-cancel-pending-btn')) $('ads-cancel-pending-btn').hidden = !canManage;
+  } else if (status === 'ACTIVE') {
+    // Show Connected & Active state
+    $('ads-page-disconnected').hidden = true;
+    $('ads-page-pending').hidden      = true;
     $('ads-page-connected').hidden    = false;
-    renderAdsConnected(data.ads);
-    $('ads-edit-btn').hidden          = false;
-    $('ads-disconnect-btn').hidden    = false;
+
+    $('ads-display-id').textContent   = ads.customer_id;
+    $('ads-display-name').textContent = ads.account_name || '—';
+    $('ads-display-date').textContent = new Date(Number(ads.connected_at)).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+
+    if ($('ads-disconnect-btn')) $('ads-disconnect-btn').hidden = !canManage;
   } else {
+    // Disconnected state
     $('ads-page-disconnected').hidden = false;
+    $('ads-page-pending').hidden      = true;
     $('ads-page-connected').hidden    = true;
     $('ads-customer-id').value  = '';
     $('ads-account-name').value = '';
   }
 }
 
-function renderAdsConnected(ads) {
-  $('ads-display-id').textContent   = ads.customer_id;
-  $('ads-display-name').textContent = ads.account_name || '—';
-  $('ads-display-date').textContent = new Date(Number(ads.connected_at)).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
-}
-
 $('ads-form').onsubmit = async ev => {
   ev.preventDefault();
   const btn = $('ads-connect-btn');
   btn.disabled = true;
-  btn.textContent = 'Connecting…';
+  btn.textContent = 'Sending request…';
   try {
     await workspaceRequest('/' + activeWs + '/ads', 'POST', {
       customer_id:  $('ads-customer-id').value,
       account_name: $('ads-account-name').value,
     });
-    toast('Google Ads account connected!', 'success');
+    toast('Link request sent! Follow the instructions to approve.', 'success');
     await loadAds(activeWs, currentManage);
   } catch (e) {
     toast(e.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Connect account';
+    btn.textContent = 'Send link request';
   }
 };
 
-$('ads-edit-btn').onclick = () => {
-  $('ads-page-connected').hidden    = true;
-  $('ads-page-disconnected').hidden = false;
-  $('ads-customer-id').focus();
-};
+// Check / verify link button
+if ($('ads-verify-btn')) {
+  $('ads-verify-btn').onclick = async () => {
+    const btn = $('ads-verify-btn');
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    try {
+      await workspaceRequest('/' + activeWs + '/ads/verify', 'POST');
+      toast('Google Ads account linked and active!', 'success');
+      await loadAds(activeWs, currentManage);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Check status / Link accepted";
+    }
+  };
+}
 
+// Cancel pending link request
+if ($('ads-cancel-pending-btn')) {
+  $('ads-cancel-pending-btn').onclick = async () => {
+    if (!confirm('Cancel this pending link request?')) return;
+    const btn = $('ads-cancel-pending-btn');
+    btn.disabled = true;
+    try {
+      await workspaceRequest('/' + activeWs + '/ads', 'DELETE');
+      toast('Link request cancelled.');
+      await loadAds(activeWs, currentManage);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
+// Unlink connected account
 $('ads-disconnect-btn').onclick = async () => {
-  if (!confirm('Disconnect the Google Ads account from this workspace?')) return;
+  if (!confirm('Unlink this Google Ads account from this workspace?')) return;
   $('ads-disconnect-btn').disabled = true;
   try {
     await workspaceRequest('/' + activeWs + '/ads', 'DELETE');
-    toast('Google Ads account disconnected.');
+    toast('Google Ads account unlinked.');
     await loadAds(activeWs, currentManage);
   } catch (e) {
     toast(e.message, 'error');

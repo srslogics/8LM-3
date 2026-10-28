@@ -204,6 +204,10 @@ details.role-guide p { margin-top: 10px; color: var(--gcp-text-2); line-height: 
 .ads-status-connected { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 500; background: #e6f4ea; color: #1e8e3e; }
 .ads-status-connected::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #1e8e3e; flex-shrink: 0; }
 
+.ads-status-pending { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 500; background: #fef7e0; color: #b06000; }
+.ads-status-pending::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #f29900; flex-shrink: 0; }
+.sidebar-badge.pending { background: #fef7e0; color: #b06000; }
+
 .ads-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 24px; }
 .ads-info-label { font-size: 11px; font-weight: 500; color: var(--gcp-text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
 .ads-info-value { font-size: 15px; color: var(--gcp-text); }
