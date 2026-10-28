@@ -66,6 +66,11 @@ function showView(view) {
   if (navMembers && navMembers.classList) navMembers.classList.toggle('active', view === 'members');
   if (navAds && navAds.classList) navAds.classList.toggle('active', view === 'ads');
 
+  const sidebarSection = $('sidebar-integrations-section');
+  if (sidebarSection && view === 'ads') {
+    sidebarSection.hidden = false;
+  }
+
   if (view === 'ads') loadAds(activeWs, currentManage);
 }
 
@@ -229,6 +234,7 @@ async function loadWorkspace() {
   $('delete-workspace').hidden     = w.role !== 'Owner';
   $('invite-section').hidden       = !manage;
   $('invite-link-area').hidden     = true;
+  loadAds(id, manage);
 
   /* Invite roles */
   $('invite-role').replaceChildren();
@@ -343,46 +349,42 @@ $('workspace-select').onchange = async e => {
   catch (e) { toast(e.message, 'error'); }
 };
 
-function promptConnectAds(workspaceName) {
-  const modal = $('modal-backdrop');
-  if (!modal) return;
-  const title = $('modal-title');
-  if (title) title.textContent = 'Connect Google Ads to ' + workspaceName;
-  modal.hidden = false;
-
-  const confirmBtn = $('modal-confirm-btn');
-  const cancelBtn = $('modal-cancel-btn');
-  const closeBtn = $('modal-close');
-
-  if (confirmBtn) {
-    confirmBtn.onclick = () => {
-      modal.hidden = true;
-      showView('ads');
-    };
-  }
-  if (cancelBtn) {
-    cancelBtn.onclick = () => {
-      modal.hidden = true;
-    };
-  }
-  if (closeBtn) {
-    closeBtn.onclick = () => {
-      modal.hidden = true;
-    };
-  }
-}
-
 $('new-workspace').onclick = async () => {
   const name = prompt('Workspace name');
   if (!name) return;
   try {
     const r = await workspaceRequest('', 'POST', { name });
     await loadWorkspaces(r.id);
-    showView('members');
+
+    // First they make their workspace, then Google Ads gets visible!
+    const sidebarSection = $('sidebar-integrations-section');
+    if (sidebarSection) sidebarSection.hidden = false;
+    showView('ads');
+    const banner = $('ads-onboarding-banner');
+    if (banner) banner.hidden = false;
+    const txt = $('ads-onboarding-text');
+    if (txt) txt.textContent = 'Workspace "' + name + '" created! Connect your Google Ads account to complete setup.';
     toast('Workspace "' + name + '" created.', 'success');
-    promptConnectAds(name);
   } catch (e) { toast(e.message, 'error'); }
 };
+
+if ($('promo-connect-ads-btn')) {
+  $('promo-connect-ads-btn').onclick = () => {
+    const sidebarSection = $('sidebar-integrations-section');
+    if (sidebarSection) sidebarSection.hidden = false;
+    showView('ads');
+    const banner = $('ads-onboarding-banner');
+    if (banner) banner.hidden = true;
+  };
+}
+
+const skipAdsAction = () => {
+  const banner = $('ads-onboarding-banner');
+  if (banner) banner.hidden = true;
+  showView('members');
+};
+if ($('ads-skip-top-btn')) $('ads-skip-top-btn').onclick = skipAdsAction;
+if ($('ads-form-skip-btn')) $('ads-form-skip-btn').onclick = skipAdsAction;
 
 $('rename-workspace').onclick = async () => {
   const name = prompt('New workspace name', $('workspace-title').textContent);
@@ -444,8 +446,21 @@ async function loadAds(wsId, canManage) {
 
   const connected = Boolean(data.ads);
 
+  // Sidebar section: only visible if Google Ads is connected or user is currently on the ads page
+  const sidebarSection = $('sidebar-integrations-section');
+  if (sidebarSection) {
+    sidebarSection.hidden = !connected && currentView !== 'ads';
+  }
+
   // Sidebar badge
-  $('ads-sidebar-badge').hidden = !connected;
+  const badge = $('ads-sidebar-badge');
+  if (badge) badge.hidden = !connected;
+
+  // Promo banner on view-members
+  const promo = $('ads-promo-banner');
+  if (promo) {
+    promo.hidden = connected || !canManage;
+  }
 
   if (!canManage && !connected) {
     // Non-admin, nothing connected — show info message

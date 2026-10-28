@@ -100,22 +100,24 @@
         Members &amp; access
       </button>
 
-      <div class="sidebar-divider"></div>
-      <span class="sidebar-section-label">Integrations</span>
+      <div id="sidebar-integrations-section" hidden>
+        <div class="sidebar-divider"></div>
+        <span class="sidebar-section-label">Integrations</span>
 
-      <button class="sidebar-nav-item" id="nav-ads" data-view="ads" type="button">
-        <!-- Google Ads icon -->
-        <svg width="16" height="16" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="40" height="40" rx="6" fill="#FABC04"/>
-          <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
-          <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
-          <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
-          <circle cx="8" cy="28" r="5" fill="#EA4335"/>
-          <circle cx="32" cy="28" r="5" fill="#3C8BDC"/>
-        </svg>
-        Google Ads
-        <span class="sidebar-badge" id="ads-sidebar-badge" hidden>Connected</span>
-      </button>
+        <button class="sidebar-nav-item" id="nav-ads" data-view="ads" type="button">
+          <!-- Google Ads icon -->
+          <svg width="16" height="16" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="6" fill="#FABC04"/>
+            <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
+            <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
+            <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
+            <circle cx="8" cy="28" r="5" fill="#EA4335"/>
+            <circle cx="32" cy="28" r="5" fill="#3C8BDC"/>
+          </svg>
+          Google Ads
+          <span class="sidebar-badge" id="ads-sidebar-badge" hidden>Connected</span>
+        </button>
+      </div>
     </aside>
 
     <!-- Main content area -->
@@ -140,6 +142,27 @@
                 Delete workspace
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Google Ads connection prompt banner on workspace page -->
+        <div class="gcp-card ads-promo-card" id="ads-promo-banner" hidden>
+          <div class="gcp-card-body" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 20px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="40" height="40" rx="6" fill="#FABC04"/>
+                <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
+                <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
+                <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
+                <circle cx="8" cy="28" r="5" fill="#EA4335"/>
+                <circle cx="32" cy="28" r="5" fill="#3C8BDC"/>
+              </svg>
+              <div>
+                <div style="font-weight:500;font-size:14px;color:var(--gcp-text);">Connect Google Ads account</div>
+                <div style="color:var(--gcp-text-2);font-size:12px;">Link campaigns, track spend, and manage ad performance for this workspace.</div>
+              </div>
+            </div>
+            <button class="btn btn-filled" id="promo-connect-ads-btn" type="button">Connect Google Ads</button>
           </div>
         </div>
 
@@ -219,6 +242,17 @@
           </div>
         </div>
 
+        <!-- Post-creation onboarding banner -->
+        <div id="ads-onboarding-banner" class="ads-success-banner" hidden>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e8e3e" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span id="ads-onboarding-text" style="font-size:13px;font-weight:500;color:#1e8e3e;">Workspace created! Connect your Google Ads account to complete setup.</span>
+            </div>
+            <button class="btn" id="ads-skip-top-btn" type="button" style="height:28px;padding:0 12px;font-size:12px;">Skip for now</button>
+          </div>
+        </div>
+
         <!-- Not connected -->
         <div id="ads-page-disconnected">
           <!-- Hero prompt card -->
@@ -276,6 +310,7 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                     Connect account
                   </button>
+                  <button class="btn" id="ads-form-skip-btn" type="button">Skip for now</button>
                 </div>
               </form>
             </div>
@@ -327,39 +362,6 @@
       </section>
 
     </main>
-  </div>
-</div>
-
-<!-- Modal for Google Ads connection prompt -->
-<div id="modal-backdrop" class="modal-backdrop" hidden>
-  <div class="gcp-modal" role="dialog" aria-modal="true">
-    <div class="modal-header">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="40" height="40" rx="8" fill="#FABC04"/>
-          <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
-          <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
-          <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
-          <circle cx="8" cy="28" r="5" fill="#EA4335"/>
-          <circle cx="32" cy="28" r="5" fill="#3C8BDC"/>
-        </svg>
-        <h3 id="modal-title">Connect Google Ads</h3>
-      </div>
-      <button id="modal-close" class="modal-close-btn" type="button" aria-label="Close">&times;</button>
-    </div>
-    <div class="modal-body">
-      <p id="modal-desc" style="color:var(--gcp-text-2);font-size:14px;line-height:1.6;margin-bottom:16px;">
-        Your workspace is ready. Link your Google Ads account to manage campaigns, monitor budgets, and streamline workflows.
-      </p>
-      <div style="background:var(--gcp-body-bg);border:1px solid var(--gcp-border);border-radius:6px;padding:12px 16px;font-size:13px;color:var(--gcp-text-2);display:flex;align-items:center;gap:10px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span>You will need your 10-digit Google Ads Customer ID (e.g. 123-456-7890).</span>
-      </div>
-    </div>
-    <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--gcp-border);">
-      <button id="modal-cancel-btn" class="btn" type="button">Maybe later</button>
-      <button id="modal-confirm-btn" class="btn btn-filled" type="button">Connect Google Ads</button>
-    </div>
   </div>
 </div>
 

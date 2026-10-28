@@ -194,8 +194,10 @@ details.role-guide p { margin-top: 10px; color: var(--gcp-text-2); line-height: 
 #toast.success { background: var(--gcp-success); }
 
 /* ══════════════════════════════════════════════════
-   GOOGLE ADS PAGE
+   GOOGLE ADS PAGE & PROMO
    ══════════════════════════════════════════════════ */
+.ads-promo-card { border-left: 4px solid #FABC04; background: #fffef7; margin-bottom: 24px; }
+.ads-success-banner { background: #e6f4ea; border: 1px solid #ceead6; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 20px; }
 .ads-hero-card { border-top: 3px solid #FABC04; }
 
 .ads-connect-pills { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
