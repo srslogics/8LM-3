@@ -236,10 +236,11 @@ details.role-guide p { margin-top: 10px; color: var(--gcp-text-2); line-height: 
 .ads-status-pending::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #f29900; flex-shrink: 0; }
 .sidebar-badge.pending { background: #fef7e0; color: #b06000; }
 
-.ads-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 24px; }
+.ads-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; align-items: start; }
+.ads-info-item { min-width: 0; overflow: hidden; }
 .ads-info-label { font-size: 11px; font-weight: 500; color: var(--gcp-text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
-.ads-info-value { font-size: 15px; color: var(--gcp-text); }
-.ads-info-value.mono { font-family: monospace; font-size: 18px; letter-spacing: 1px; }
+.ads-info-value { font-size: 14px; color: var(--gcp-text); word-break: break-all; }
+.ads-info-value.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 14px; letter-spacing: .5px; }
 
 /* ── Campaigns Table ─────────────────────────────── */
 .campaign-channel-chip { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: #e8f0fe; color: #1a73e8; }

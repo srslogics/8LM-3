@@ -116,7 +116,7 @@ export async function sendManagerLinkInvitation(clientCustomerId) {
   const cleanClientId = clientCustomerId.replace(/-/g, "").trim();
   const token = await getAccessToken();
 
-  const url = `https://googleads.googleapis.com/v18/customers/${managerId}/customerClientLinks:mutate`;
+  const url = `https://googleads.googleapis.com/v26/customers/${managerId}/customerClientLinks:mutate`;
 
   const res = await fetch(url, {
     method: "POST",
@@ -163,7 +163,7 @@ export async function checkManagerLinkStatus(clientCustomerId) {
   const cleanClientId = clientCustomerId.replace(/-/g, "").trim();
   const token = await getAccessToken();
 
-  const url = `https://googleads.googleapis.com/v18/customers/${managerId}/googleAds:search`;
+  const url = `https://googleads.googleapis.com/v26/customers/${managerId}/googleAds:search`;
   const query = `
     SELECT
       customer_client_link.resource_name,
@@ -349,7 +349,7 @@ export async function listAccessibleGoogleAdsCustomers(accessToken) {
   if (!accessToken) return { ok: false, error: "Missing Google OAuth access token." };
 
   try {
-    const res = await fetch("https://googleads.googleapis.com/v18/customers:listAccessibleCustomers", {
+    const res = await fetch("https://googleads.googleapis.com/v26/customers:listAccessibleCustomers", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "developer-token": devToken,
@@ -415,7 +415,7 @@ export async function fetchGoogleAdsCampaigns(accessToken, customerId, managerId
     };
     if (managerId) headers["login-customer-id"] = managerId.replace(/-/g, "").trim();
 
-    let res = await fetch(`https://googleads.googleapis.com/v18/customers/${cleanId}/googleAds:search`, {
+    let res = await fetch(`https://googleads.googleapis.com/v26/customers/${cleanId}/googleAds:search`, {
       method: "POST",
       headers,
       body: JSON.stringify({ query }),
@@ -426,7 +426,7 @@ export async function fetchGoogleAdsCampaigns(accessToken, customerId, managerId
     // If failed and no login-customer-id was set, try setting login-customer-id = cleanId
     if (!res.ok && !headers["login-customer-id"]) {
       headers["login-customer-id"] = cleanId;
-      res = await fetch(`https://googleads.googleapis.com/v18/customers/${cleanId}/googleAds:search`, {
+      res = await fetch(`https://googleads.googleapis.com/v26/customers/${cleanId}/googleAds:search`, {
         method: "POST",
         headers,
         body: JSON.stringify({ query }),
