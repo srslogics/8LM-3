@@ -1,5 +1,6 @@
-import urllib.request,urllib.error,http.cookiejar,json,uuid
-base='http://localhost:8005'
+import urllib.request,urllib.error,http.cookiejar,json,uuid,os
+from concurrent.futures import ThreadPoolExecutor
+base=os.environ.get('TEST_BASE_URL','http://localhost:8005')
 def client():return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 def call(c,path,method='GET',body=None):
  req=urllib.request.Request(base+'/api'+path,method=method,data=json.dumps(body).encode() if body is not None else None,headers={'Content-Type':'application/json'})
@@ -11,7 +12,9 @@ w=call(a,'/workspaces')[1]['workspaces'][0]['id'];prefix='/workspaces/'+str(w)
 assert call(b,prefix)[0]==404
 status,invite=call(a,prefix+'/invites','POST',{'email':emails[1],'role':'Viewer'});assert status==200
 assert call(c,'/workspaces/accept','POST',{'token':invite['token']})[0]==400
-assert call(b,'/workspaces/accept','POST',{'token':invite['token']})[0]==200
+with ThreadPoolExecutor(max_workers=2) as executor:
+ results=list(executor.map(lambda _:call(b,'/workspaces/accept','POST',{'token':invite['token']})[0],range(2)))
+assert sorted(results)==[200,400],results
 assert call(b,'/workspaces/accept','POST',{'token':invite['token']})[0]==400
 assert call(b,prefix,'PATCH',{'name':'illegal'})[0]==403
 members=call(a,prefix)[1]['members'];bid=next(m['id'] for m in members if m['email']==emails[1]);aid=next(m['id'] for m in members if m['email']==emails[0])
@@ -24,4 +27,4 @@ assert call(a,prefix,'DELETE',{'name':'My workspace'})[0]==403
 assert call(b,prefix,'DELETE',{'name':'wrong'})[0]==400
 assert call(b,prefix,'DELETE',{'name':'My workspace'})[0]==200
 assert call(a,prefix)[0]==404
-print('Passed: workspace isolation, invite ownership/replay, role restrictions, ownership transfer, deletion.')
+print('Passed: workspace isolation, invite ownership/concurrent replay, role restrictions, ownership transfer, deletion.')
