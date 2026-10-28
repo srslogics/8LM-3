@@ -16,12 +16,13 @@ db.exec(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, email TEXT UN
 const app = express();
 app.disable('x-powered-by');
 const production = process.env.NODE_ENV === 'production';
+const appOrigin = new URL(process.env.APP_ORIGIN || process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 8000}`).origin;
 if (production) app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: { directives: { 'upgrade-insecure-requests': production ? [] : null } } }));
 app.use(express.json({ limit: '4kb' }));
 app.use('/api', (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 app.use('/api', (req, res, next) => {
-  if (req.method !== 'GET' && (req.get('sec-fetch-site') === 'cross-site' || (req.get('origin') && req.get('origin') !== (process.env.APP_ORIGIN || `http://localhost:${process.env.PORT || 8000}`)))) return res.status(403).json({ error: 'Please use the login page to continue.' });
+  if (req.method !== 'GET' && (req.get('sec-fetch-site') === 'cross-site' || (req.get('origin') && req.get('origin') !== appOrigin))) return res.status(403).json({ error: 'Please use the login page to continue.' });
   next();
 });
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Too many attempts. Try again in 15 minutes.' } });
