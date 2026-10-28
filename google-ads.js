@@ -1,7 +1,48 @@
+import { readFileSync, readdirSync } from "node:fs";
+
 // Google Ads API v18 Integration Service (MCC Manager Linking)
 
 let cachedToken = null;
 let tokenExpiresAt = 0;
+
+/**
+ * Helper: Extract Google OAuth Client ID and Secret from:
+ * 1. Environment variables GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
+ * 2. Full JSON string in GOOGLE_CREDENTIALS_JSON
+ * 3. Any downloaded client_secret_*.json file in project root
+ */
+export function getGoogleOAuthCredentials() {
+  let clientId = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ADS_CLIENT_ID || "").trim();
+  let clientSecret = (process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_ADS_CLIENT_SECRET || "").trim();
+  if (clientId && clientSecret) return { clientId, clientSecret };
+
+  // Check if entire downloaded JSON was pasted into GOOGLE_CREDENTIALS_JSON
+  if (process.env.GOOGLE_CREDENTIALS_JSON) {
+    try {
+      const parsed = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+      const conf = parsed.web || parsed.installed || parsed;
+      if (conf.client_id && conf.client_secret) {
+        return { clientId: conf.client_id.trim(), clientSecret: conf.client_secret.trim() };
+      }
+    } catch {}
+  }
+
+  // Check if user downloaded client_secret_*.json into workspace
+  try {
+    const files = readdirSync(".");
+    const jsonFile = files.find(f => f.startsWith("client_secret") && f.endsWith(".json")) ||
+                     files.find(f => f === "google-credentials.json");
+    if (jsonFile) {
+      const parsed = JSON.parse(readFileSync(jsonFile, "utf8"));
+      const conf = parsed.web || parsed.installed || parsed;
+      if (conf.client_id && conf.client_secret) {
+        return { clientId: conf.client_id.trim(), clientSecret: conf.client_secret.trim() };
+      }
+    }
+  } catch {}
+
+  return { clientId: "", clientSecret: "" };
+}
 
 /**
  * Check if all required Google Ads API environment variables are set.
@@ -169,17 +210,15 @@ export async function checkManagerLinkStatus(clientCustomerId) {
  * Check if Google OAuth 2.0 credentials are set on server.
  */
 export function isGoogleOAuthReady() {
-  return Boolean(
-    (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ADS_CLIENT_ID) &&
-    (process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_ADS_CLIENT_SECRET)
-  );
+  const { clientId, clientSecret } = getGoogleOAuthCredentials();
+  return Boolean(clientId && clientSecret);
 }
 
 /**
  * Generate Google OAuth 2.0 Authorization URL for Google Ads & Campaign Manager 360.
  */
 export function getGoogleOAuthUrl(workspaceId, origin) {
-  const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ADS_CLIENT_ID || "").trim();
+  const { clientId } = getGoogleOAuthCredentials();
   const redirectUri = `${origin}/api/auth/google/callback`;
   const scopes = [
     "openid",
@@ -207,8 +246,7 @@ export function getGoogleOAuthUrl(workspaceId, origin) {
  * Exchange OAuth authorization code for access & refresh tokens.
  */
 export async function exchangeOAuthCode(code, origin) {
-  const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ADS_CLIENT_ID || "").trim();
-  const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_ADS_CLIENT_SECRET || "").trim();
+  const { clientId, clientSecret } = getGoogleOAuthCredentials();
   const redirectUri = `${origin}/api/auth/google/callback`;
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
