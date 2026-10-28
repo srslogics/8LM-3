@@ -1,5 +1,73 @@
 import { randomBytes, createHash } from "node:crypto";
 export function workspaceRoutes(app, db, session) {
+  /* ── Google Ads connection routes ───────────────── */
+
+  // GET  /api/workspaces/:id/ads  – read connection (any member)
+  // POST /api/workspaces/:id/ads  – connect or update (owner/admin)
+  // DELETE /api/workspaces/:id/ads – disconnect (owner/admin)
+
+  // Thin helper: verify membership without the heavy workspace lock
+  async function adsSession(req, res) {
+    const user = await session(req);
+    if (!user) { res.status(401).json({ error: "Please log in." }); return null; }
+    if (!/^[1-9]\d*$/.test(req.params.id)) { res.status(404).json({ error: "Not found." }); return null; }
+    const membership = await db.get(
+      "SELECT role FROM eightlm.members WHERE workspace_id=$1 AND user_id=$2",
+      req.params.id, user.id,
+    );
+    if (!membership) { res.status(404).json({ error: "Not found." }); return null; }
+    return { user, role: membership.role };
+  }
+
+  app.get("/api/workspaces/:id/ads", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    const row = await db.get(
+      "SELECT customer_id, account_name, connected_at FROM eightlm.google_ads WHERE workspace_id=$1",
+      req.params.id,
+    );
+    res.json({ ads: row || null });
+  });
+
+  app.post("/api/workspaces/:id/ads", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    if (!["Owner", "Admin"].includes(ctx.role))
+      return res.status(403).json({ error: "Only owners and admins can connect accounts." });
+
+    // Normalise customer ID: accept 123-456-7890 or 1234567890
+    const raw = typeof req.body.customer_id === "string" ? req.body.customer_id.replace(/-/g, "").trim() : "";
+    const accountName = typeof req.body.account_name === "string" ? req.body.account_name.trim().slice(0, 120) : "";
+    if (!/^\d{10}$/.test(raw))
+      return res.status(400).json({ error: "Enter a valid 10-digit Google Ads Customer ID." });
+
+    const formatted = `${raw.slice(0,3)}-${raw.slice(3,6)}-${raw.slice(6)}`;
+    await db.run(
+      `INSERT INTO eightlm.google_ads(workspace_id, customer_id, account_name, connected_by, connected_at)
+       VALUES($1,$2,$3,$4,$5)
+       ON CONFLICT(workspace_id) DO UPDATE
+         SET customer_id=$2, account_name=$3, connected_by=$4, connected_at=$5`,
+      req.params.id, formatted, accountName, ctx.user.id, Date.now(),
+    );
+    await db.run(
+      "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
+      req.params.id, ctx.user.email, `Google Ads account ${formatted} connected`, Date.now(),
+    );
+    res.json({ ok: true, customer_id: formatted });
+  });
+
+  app.delete("/api/workspaces/:id/ads", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    if (!["Owner", "Admin"].includes(ctx.role))
+      return res.status(403).json({ error: "Only owners and admins can disconnect accounts." });
+    await db.run("DELETE FROM eightlm.google_ads WHERE workspace_id=$1", req.params.id);
+    await db.run(
+      "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
+      req.params.id, ctx.user.email, "Google Ads account disconnected", Date.now(),
+    );
+    res.json({ ok: true });
+  });
   const roles = ["Admin", "Editor", "Publisher", "Viewer"];
   const audit = async (w, u, a) =>
     await db.run(

@@ -721,3 +721,32 @@ details.role-guide p {
   .data-table th:nth-child(3),
   .data-table td:nth-child(3) { display: none; }
 }
+
+/* ============================================================
+   GOOGLE ADS CARD
+   ============================================================ */
+#ads-card { border-top: 3px solid #FABC04; }
+
+.ads-status-connected {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #e6f4ea;
+  color: #1e8e3e;
+}
+.ads-status-connected::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #1e8e3e;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  #ads-form > div { grid-template-columns: 1fr !important; }
+  #ads-form button { margin-bottom: 0 !important; }
+}

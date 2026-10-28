@@ -206,6 +206,7 @@ async function loadWorkspace() {
   $('delete-workspace').hidden     = w.role !== 'Owner';
   $('invite-section').hidden       = !manage;
   $('invite-link-area').hidden     = true;
+  loadAds(id, manage); // non-blocking – don't await
 
   /* Invite role options */
   $('invite-role').replaceChildren();
@@ -400,3 +401,85 @@ async function loadWorkspacesOnBoot() {
 const boot = request('/api/me')
   .then(data => renderUser(data.user))
   .catch(() => { $('status').textContent = 'Could not connect. Please refresh and try again.'; });
+
+/* ══════════════════════════════════════════════════
+   GOOGLE ADS
+   ══════════════════════════════════════════════════ */
+
+async function loadAds(wsId, canManage) {
+  if (!wsId) return;
+  let data;
+  try { data = await workspaceRequest('/' + wsId + '/ads'); }
+  catch (e) { return; /* non-critical, don't block workspace UI */ }
+
+  const connected = Boolean(data.ads);
+  $('ads-disconnected').hidden = connected;
+  $('ads-connected').hidden    = !connected;
+
+  const chip = $('ads-status-chip');
+  if (connected) {
+    chip.hidden = false;
+    chip.className = 'ads-status-connected';
+    chip.textContent = 'Connected';
+    $('ads-display-id').textContent   = data.ads.customer_id;
+    $('ads-display-name').textContent = data.ads.account_name || '';
+    $('ads-display-date').textContent = 'Connected ' + new Date(Number(data.ads.connected_at)).toLocaleDateString();
+    // pre-fill form in case user clicks Edit
+    $('ads-customer-id').value   = data.ads.customer_id;
+    $('ads-account-name').value  = data.ads.account_name || '';
+  } else {
+    chip.hidden = true;
+    chip.className = '';
+    $('ads-customer-id').value  = '';
+    $('ads-account-name').value = '';
+  }
+
+  // hide connect form controls if user can't manage
+  $('ads-form').querySelectorAll('input,button').forEach(el => {
+    el.disabled = !canManage;
+  });
+  if ($('ads-edit-btn'))       $('ads-edit-btn').hidden       = !canManage;
+  if ($('ads-disconnect-btn')) $('ads-disconnect-btn').hidden = !canManage;
+}
+
+$('ads-form').onsubmit = async ev => {
+  ev.preventDefault();
+  const btn = ev.submitter || $('ads-form').querySelector('button[type=submit]');
+  btn.disabled = true;
+  try {
+    await workspaceRequest('/' + activeWs + '/ads', 'POST', {
+      customer_id:  $('ads-customer-id').value,
+      account_name: $('ads-account-name').value,
+    });
+    toast('Google Ads account connected.', 'success');
+    await loadAds(activeWs, true);
+    // reload activity log
+    await loadWorkspace();
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+$('ads-edit-btn').onclick = () => {
+  // show the form again so user can update customer ID
+  $('ads-connected').hidden    = true;
+  $('ads-disconnected').hidden = false;
+  $('ads-customer-id').focus();
+};
+
+$('ads-disconnect-btn').onclick = async () => {
+  if (!confirm('Disconnect the Google Ads account from this workspace?')) return;
+  $('ads-disconnect-btn').disabled = true;
+  try {
+    await workspaceRequest('/' + activeWs + '/ads', 'DELETE');
+    toast('Google Ads account disconnected.');
+    await loadAds(activeWs, true);
+    await loadWorkspace();
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    $('ads-disconnect-btn').disabled = false;
+  }
+};
