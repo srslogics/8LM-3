@@ -331,3 +331,93 @@ export async function getCM360Campaigns(accessToken, profileId) {
     return [];
   }
 }
+
+/**
+ * Get server-configured Google Ads Developer Token.
+ */
+export function getGoogleAdsDeveloperToken() {
+  return (process.env.GOOGLE_ADS_DEVELOPER_TOKEN || process.env.DEVELOPER_TOKEN || "").trim();
+}
+
+/**
+ * List all Google Ads Customer IDs accessible by the authenticated user.
+ * Requires GOOGLE_ADS_DEVELOPER_TOKEN from an MCC account.
+ */
+export async function listAccessibleGoogleAdsCustomers(accessToken) {
+  const devToken = getGoogleAdsDeveloperToken();
+  if (!devToken || !accessToken) return [];
+
+  try {
+    const res = await fetch("https://googleads.googleapis.com/v18/customers:listAccessibleCustomers", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "developer-token": devToken,
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.warn("Google Ads listAccessibleCustomers warning:", res.status, err.error?.message || "");
+      return [];
+    }
+    const data = await res.json();
+    return (data.resourceNames || []).map(r => r.replace("customers/", ""));
+  } catch (err) {
+    console.error("Failed to list accessible Google Ads customers:", err.message);
+    return [];
+  }
+}
+
+/**
+ * Query live Google Ads campaigns (Search, PMax, Display, Video) for a customer account.
+ */
+export async function fetchGoogleAdsCampaigns(accessToken, customerId) {
+  const devToken = getGoogleAdsDeveloperToken();
+  if (!devToken || !accessToken || !customerId) return [];
+
+  const cleanId = customerId.replace(/-/g, "").trim();
+  try {
+    const res = await fetch(`https://googleads.googleapis.com/v18/customers/${cleanId}/googleAds:search`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "developer-token": devToken,
+        "login-customer-id": cleanId,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: `SELECT campaign.id, campaign.name, campaign.advertising_channel_type, campaign.status, campaign_budget.amount_micros FROM campaign ORDER BY campaign.id DESC LIMIT 50`,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.warn("Google Ads campaigns search warning:", res.status, err.error?.message || "");
+      return [];
+    }
+
+    const data = await res.json();
+    const formatChannel = (type) => {
+      const s = String(type || "").toUpperCase();
+      if (s.includes("SEARCH")) return "Search";
+      if (s.includes("PERFORMANCE_MAX")) return "Performance Max";
+      if (s.includes("DISPLAY")) return "Display";
+      if (s.includes("VIDEO")) return "Video";
+      if (s.includes("SHOPPING")) return "Shopping";
+      return type || "Search";
+    };
+
+    return (data.results || []).map(r => ({
+      id: String(r.campaign.id),
+      name: r.campaign.name || `Campaign ${r.campaign.id}`,
+      channel: formatChannel(r.campaign.advertisingChannelType),
+      status: r.campaign.status === "ENABLED" ? "ENABLED" : "PAUSED",
+      budget: r.campaignBudget?.amountMicros
+        ? `$${(Number(r.campaignBudget.amountMicros) / 1000000).toFixed(2)}/day`
+        : "$0.00/day",
+      imported: false,
+    }));
+  } catch (err) {
+    console.error("Failed to fetch Google Ads campaigns:", err.message);
+    return [];
+  }
+}

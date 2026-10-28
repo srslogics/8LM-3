@@ -10,11 +10,14 @@ import {
   getGoogleProfile,
   getCM360Profiles,
   getCM360Campaigns,
+  getGoogleAdsDeveloperToken,
+  listAccessibleGoogleAdsCustomers,
+  fetchGoogleAdsCampaigns,
 } from "./google-ads.js";
 export function workspaceRoutes(app, db, session) {
   /* ── Google Developers API & Ads Routes ── */
 
-  // Ensure table and columns exist in Neon database
+  // Ensure table and columns exist in Neon database and purge legacy placeholder test data
   db.run(`
     CREATE TABLE IF NOT EXISTS eightlm.google_ads (
       workspace_id BIGINT PRIMARY KEY REFERENCES eightlm.workspaces(id) ON DELETE CASCADE,
@@ -29,6 +32,7 @@ export function workspaceRoutes(app, db, session) {
     return db.run(`
       ALTER TABLE eightlm.google_ads ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'PENDING';
       ALTER TABLE eightlm.google_ads ADD COLUMN IF NOT EXISTS manager_id TEXT DEFAULT '';
+      DELETE FROM eightlm.campaigns WHERE id LIKE 'c-%';
       CREATE TABLE IF NOT EXISTS eightlm.campaigns (
         id TEXT NOT NULL,
         workspace_id BIGINT NOT NULL REFERENCES eightlm.workspaces(id) ON DELETE CASCADE,
@@ -240,28 +244,9 @@ export function workspaceRoutes(app, db, session) {
       req.params.id, customerId, accountName, ctx.user.id, now,
     );
 
-    // Seed realistic Campaign Manager 360 & cross-publisher campaigns
-    const seedCampaigns = [
-      { id: "c-101", name: "CM360 Display - Premium Direct Placements", channel: "Display", status: "ENABLED", budget: "$150.00/day" },
-      { id: "c-102", name: "CM360 Video - Connected TV & Streaming Flights", channel: "Connected TV", status: "ENABLED", budget: "$220.00/day" },
-      { id: "c-103", name: "CM360 Rich Media - High Impact Expandables", channel: "Rich Media", status: "ENABLED", budget: "$85.00/day" },
-      { id: "c-104", name: "Google Search - Brand Core & High Intent", channel: "Search", status: "ENABLED", budget: "$65.00/day" },
-      { id: "c-105", name: "Digital Audio - Podcast & Streaming Audio Flights", channel: "Audio", status: "PAUSED", budget: "$45.00/day" },
-    ];
-
-    for (const c of seedCampaigns) {
-      await db.run(
-        `INSERT INTO eightlm.campaigns(id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at)
-         VALUES($1, $2, $3, $4, $5, $6, $7, false, 0)
-         ON CONFLICT (workspace_id, id) DO UPDATE
-           SET name=$4, channel=$5, status=$6, budget=$7`,
-        c.id, req.params.id, customerId, c.name, c.channel, c.status, c.budget,
-      );
-    }
-
     await db.run(
       "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
-      req.params.id, ctx.user.email, "Google Ads & Campaign Manager 360 connected via Google Developer API", now,
+      req.params.id, ctx.user.email, "Google Ads connected via Google Developers API", now,
     );
 
     res.json({ ok: true, status: "ACTIVE", customer_id: customerId, account_name: accountName });
@@ -324,17 +309,38 @@ export function workspaceRoutes(app, db, session) {
       return res.status(404).json({ error: "Google Ads account not connected." });
     }
 
-    let rows = await db.all(
-      "SELECT id, name, channel, status, budget, imported FROM eightlm.campaigns WHERE workspace_id=$1 ORDER BY id ASC",
-      req.params.id,
-    );
-
-    // If connected via real Google OAuth, attempt to pull live CM360 campaigns from Google API
+    const devToken = getGoogleAdsDeveloperToken();
     const tokenRow = await db.get(
       "SELECT access_token FROM eightlm.oauth_tokens WHERE workspace_id=$1",
       req.params.id,
     );
+
+    // If connected via Google OAuth, attempt to pull live Google Ads & CM360 campaigns
     if (tokenRow && tokenRow.access_token && !tokenRow.access_token.startsWith("demo_")) {
+      // 1. Google Ads API (Search, Performance Max, Display, Video)
+      if (devToken) {
+        try {
+          const customers = await listAccessibleGoogleAdsCustomers(tokenRow.access_token);
+          const targetCustomer = (customers && customers[0]) || ads.customer_id;
+          if (targetCustomer && /^\d+$/.test(targetCustomer.replace(/-/g, ""))) {
+            const liveAds = await fetchGoogleAdsCampaigns(tokenRow.access_token, targetCustomer);
+            if (liveAds && liveAds.length > 0) {
+              for (const c of liveAds) {
+                await db.run(
+                  `INSERT INTO eightlm.campaigns(id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at)
+                   VALUES($1, $2, $3, $4, $5, $6, $7, false, 0)
+                   ON CONFLICT (workspace_id, id) DO NOTHING`,
+                  c.id, req.params.id, targetCustomer, c.name, c.channel, c.status, c.budget,
+                );
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Google Ads API live fetch notice:", e.message);
+        }
+      }
+
+      // 2. Campaign Manager 360 API (if user has active CM360 profiles)
       try {
         const profiles = await getCM360Profiles(tokenRow.access_token);
         if (profiles && profiles.length > 0) {
@@ -348,10 +354,6 @@ export function workspaceRoutes(app, db, session) {
                 c.id, req.params.id, ads.customer_id, c.name, c.channel, c.status, c.budget,
               );
             }
-            rows = await db.all(
-              "SELECT id, name, channel, status, budget, imported FROM eightlm.campaigns WHERE workspace_id=$1 ORDER BY id ASC",
-              req.params.id,
-            );
           }
         }
       } catch (err) {
@@ -359,32 +361,27 @@ export function workspaceRoutes(app, db, session) {
       }
     }
 
-    // If no campaigns have been seeded yet for this workspace, seed realistic Campaign Manager 360 campaigns
-    if (!rows || rows.length === 0) {
-      const defaultCampaigns = [
-        { id: "c-101", name: "CM360 Display - Premium Direct Placements", channel: "Display", status: "ENABLED", budget: "$150.00/day" },
-        { id: "c-102", name: "CM360 Video - Connected TV & Streaming Flights", channel: "Connected TV", status: "ENABLED", budget: "$220.00/day" },
-        { id: "c-103", name: "CM360 Rich Media - High Impact Expandables", channel: "Rich Media", status: "ENABLED", budget: "$85.00/day" },
-        { id: "c-104", name: "Google Search - Brand Core & High Intent", channel: "Search", status: "ENABLED", budget: "$65.00/day" },
-        { id: "c-105", name: "Digital Audio - Podcast & Streaming Audio Flights", channel: "Audio", status: "PAUSED", budget: "$45.00/day" },
-      ];
+    // Return genuine campaigns only (excluding any legacy placeholder test items)
+    const rows = await db.all(
+      "SELECT id, name, channel, status, budget, imported FROM eightlm.campaigns WHERE workspace_id=$1 AND id NOT LIKE 'c-%' ORDER BY id ASC",
+      req.params.id,
+    );
 
-      for (const c of defaultCampaigns) {
-        await db.run(
-          `INSERT INTO eightlm.campaigns(id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at)
-           VALUES($1, $2, $3, $4, $5, $6, $7, false, 0)
-           ON CONFLICT DO NOTHING`,
-          c.id, req.params.id, ads.customer_id, c.name, c.channel, c.status, c.budget,
-        );
-      }
+    res.json({
+      campaigns: rows || [],
+      hasDeveloperToken: Boolean(devToken),
+      customer_id: ads.customer_id,
+    });
+  });
 
-      rows = await db.all(
-        "SELECT id, name, channel, status, budget, imported FROM eightlm.campaigns WHERE workspace_id=$1 ORDER BY id ASC",
-        req.params.id,
-      );
-    }
-
-    res.json({ campaigns: rows });
+  // Clear workspace campaigns
+  app.post("/api/workspaces/:id/ads/campaigns/clear", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    if (!["Owner", "Admin"].includes(ctx.role))
+      return res.status(403).json({ error: "Only owners and admins can clear campaigns." });
+    await db.run("DELETE FROM eightlm.campaigns WHERE workspace_id=$1", req.params.id);
+    res.json({ ok: true });
   });
 
   app.post("/api/workspaces/:id/ads/campaigns/import", async (req, res) => {

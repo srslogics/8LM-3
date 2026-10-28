@@ -832,8 +832,13 @@ async function loadCampaigns(wsId, canManage) {
     return;
   }
 
+  const devNotice = $('dev-token-notice');
+  if (devNotice) {
+    devNotice.hidden = Boolean(data.hasDeveloperToken);
+  }
+
   currentCampaigns = data.campaigns || [];
-  renderCampaigns(currentCampaigns, canManage);
+  renderCampaigns(currentCampaigns, canManage, data.hasDeveloperToken);
 
   const importedCount = currentCampaigns.filter(c => c.imported).length;
   const cBadge = $('campaigns-sidebar-badge');
@@ -854,13 +859,16 @@ function getChannelChipClass(channel) {
   return 'search';
 }
 
-function renderCampaigns(campaigns, canManage) {
+function renderCampaigns(campaigns, canManage, hasDevToken) {
   const tbody = $('campaigns-table-body');
   if (!tbody) return;
   tbody.innerHTML = '';
 
   if (campaigns.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gcp-text-3);padding:24px;">No campaigns found in this Google Ads account.</td></tr>';
+    const hint = hasDevToken === false
+      ? 'No campaigns imported yet. Add GOOGLE_ADS_DEVELOPER_TOKEN to Render to automatically sync live Search &amp; Performance Max campaigns.'
+      : 'No active campaigns found in this Google Ads account.';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gcp-text-3);padding:32px;line-height:1.6;">' + hint + '</td></tr>';
     updateSelectedCount();
     return;
   }
@@ -967,6 +975,13 @@ if ($('import-campaigns-btn')) {
       btn.disabled = false;
       btn.textContent = 'Fetch selected campaigns';
     }
+  };
+}
+
+if ($('refresh-campaigns-btn')) {
+  $('refresh-campaigns-btn').onclick = async () => {
+    toast('Syncing campaigns…');
+    await loadCampaigns(activeWs, currentManage);
   };
 }
 
