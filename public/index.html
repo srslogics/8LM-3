@@ -178,16 +178,13 @@
       <span class="sidebar-section-label">Integrations</span>
 
       <button class="sidebar-nav-item" id="nav-ads" data-view="ads" type="button">
-        <!-- Google Ads icon -->
-        <svg width="16" height="16" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="40" height="40" rx="6" fill="#FABC04"/>
-          <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
-          <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
-          <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
-          <circle cx="8" cy="28" r="5" fill="#EA4335"/>
-          <circle cx="32" cy="28" r="5" fill="#3C8BDC"/>
+        <!-- Google Marketing Platform / CM360 icon -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="#4285F4" stroke-width="2.5"/>
+          <circle cx="12" cy="12" r="6" stroke="#34A853" stroke-width="2.2"/>
+          <circle cx="12" cy="12" r="2.5" fill="#EA4335"/>
         </svg>
-        Google Ads
+        Campaign Manager 360
         <span class="sidebar-badge" id="ads-sidebar-badge" hidden>Connected</span>
       </button>
     </aside>
@@ -362,12 +359,12 @@
         </div>
       </section>
 
-      <!-- ══════ VIEW: Google Ads ══════ -->
+      <!-- ══════ VIEW: Campaign Manager 360 ══════ -->
       <section id="view-ads" class="page-view" hidden>
         <div class="page-header">
           <div class="page-header-left">
             <div class="breadcrumb">8LM Console › Integrations</div>
-            <h1>Google Ads</h1>
+            <h1>Campaign Manager 360</h1>
           </div>
         </div>
 
@@ -376,17 +373,14 @@
           <!-- Hero prompt card with 1-Click Google OAuth -->
           <div class="gcp-card ads-hero-card">
             <div class="gcp-card-body" style="padding:40px 32px;text-align:center;">
-              <svg width="56" height="56" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:16px;">
-                <rect width="40" height="40" rx="10" fill="#FABC04"/>
-                <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
-                <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
-                <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
-                <circle cx="8" cy="28" r="6" fill="#EA4335"/>
-                <circle cx="32" cy="28" r="6" fill="#3C8BDC"/>
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" style="margin-bottom:16px;">
+                <circle cx="12" cy="12" r="10" stroke="#4285F4" stroke-width="2.5"/>
+                <circle cx="12" cy="12" r="6" stroke="#34A853" stroke-width="2.2"/>
+                <circle cx="12" cy="12" r="2.5" fill="#EA4335"/>
               </svg>
-              <h2 style="font-size:22px;font-weight:600;margin-bottom:8px;">Connect Google Ads &amp; Campaign Manager 360</h2>
+              <h2 style="font-size:22px;font-weight:600;margin-bottom:8px;">Connect Campaign Manager 360 (CM360)</h2>
               <p style="color:var(--gcp-text-2);font-size:14px;max-width:540px;margin:0 auto 24px;">
-                Automated 1-Click integration powered by official Google Developer APIs. Connect once to automatically import and manage all your campaigns.
+                Enterprise ad server and cross-publisher campaign tracking via Google Marketing Platform APIs. Connect once to automatically import and manage all your campaigns.
               </p>
 
               <!-- 1-Click Google OAuth button -->
@@ -398,7 +392,7 @@
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                   </svg>
-                  <span>Connect with Google</span>
+                  <span>Connect with Google (CM360)</span>
                 </button>
               </div>
 
@@ -409,11 +403,11 @@
                 </div>
                 <div class="ads-pill">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Google Ads &amp; Campaign 360
+                  Campaign Manager 360
                 </div>
                 <div class="ads-pill">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Official Google OAuth 2.0
+                  Floodlight Tag Attribution
                 </div>
               </div>
             </div>
@@ -507,19 +501,23 @@
           <div class="gcp-card">
             <div class="gcp-card-header">
               <div style="display:flex;align-items:center;gap:10px;">
-                <svg width="20" height="20" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#FABC04"/><path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/><path d="M8 28H20V8L8 28Z" fill="#34A853"/><path d="M20 8L32 28H20V8Z" fill="#FABC04"/><circle cx="8" cy="28" r="5" fill="#EA4335"/><circle cx="32" cy="28" r="5" fill="#3C8BDC"/></svg>
-                <h2>Google Ads account</h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="#4285F4" stroke-width="2.5"/>
+                  <circle cx="12" cy="12" r="6" stroke="#34A853" stroke-width="2.2"/>
+                  <circle cx="12" cy="12" r="2.5" fill="#EA4335"/>
+                </svg>
+                <h2>Campaign Manager 360 Account</h2>
               </div>
               <span class="ads-status-connected">Active &amp; Linked</span>
             </div>
             <div class="gcp-card-body">
               <div class="ads-info-grid">
                 <div class="ads-info-item">
-                  <div class="ads-info-label">Customer ID</div>
+                  <div class="ads-info-label">Network / Account ID</div>
                   <div class="ads-info-value mono" id="ads-display-id"></div>
                 </div>
                 <div class="ads-info-item">
-                  <div class="ads-info-label">Account nickname</div>
+                  <div class="ads-info-label">Advertiser Profile</div>
                   <div class="ads-info-value" id="ads-display-name">—</div>
                 </div>
                 <div class="ads-info-item">
@@ -537,9 +535,9 @@
           <div class="gcp-card" style="margin-top:24px;" id="campaigns-card">
             <div class="gcp-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
               <div>
-                <h2>Select campaigns to fetch in 8LM</h2>
+                <h2>Select CM360 campaigns to fetch in 8LM</h2>
                 <p style="font-size:12px;color:var(--gcp-text-2);margin-top:4px;">
-                  Choose which campaigns to fetch, track, and manage in this workspace.
+                  Choose which campaigns, placements, and creatives to monitor in this workspace.
                 </p>
               </div>
               <div style="display:flex;gap:10px;align-items:center;">

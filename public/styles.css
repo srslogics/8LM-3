@@ -246,6 +246,9 @@ details.role-guide p { margin-top: 10px; color: var(--gcp-text-2); line-height: 
 .campaign-channel-chip.pmax { background: #fce8e6; color: #c5221f; }
 .campaign-channel-chip.display { background: #fef7e0; color: #b06000; }
 .campaign-channel-chip.video { background: #f3e8fd; color: #7627bb; }
+.campaign-channel-chip.ctv { background: #e3f2fd; color: #0277bd; }
+.campaign-channel-chip.richmedia { background: #f3e5f5; color: #7b1fa2; }
+.campaign-channel-chip.audio { background: #e0f2f1; color: #00695c; }
 
 .campaign-status-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
 .campaign-status-chip.enabled { color: #1e8e3e; }

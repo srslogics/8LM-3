@@ -780,7 +780,7 @@ if ($('google-oauth-connect-btn')) {
       } else {
         // 1-Click fast connect via Google Developers API (simulates full Google OAuth connection)
         const res = await workspaceRequest('/' + activeWs + '/auth/google/connect-demo', 'POST');
-        toast('Connected via Google Developers API! Importing campaigns…', 'success');
+        toast('Connected Campaign Manager 360! Importing campaigns…', 'success');
         await loadAds(activeWs, currentManage);
         await loadCampaigns(activeWs, currentManage);
         showView('campaigns');
@@ -795,11 +795,11 @@ if ($('google-oauth-connect-btn')) {
 
 // Unlink connected account
 $('ads-disconnect-btn').onclick = async () => {
-  if (!confirm('Unlink this Google Ads account from this workspace?')) return;
+  if (!confirm('Unlink Campaign Manager 360 from this workspace?')) return;
   $('ads-disconnect-btn').disabled = true;
   try {
     await workspaceRequest('/' + activeWs + '/ads', 'DELETE');
-    toast('Google Ads account unlinked.');
+    toast('Campaign Manager 360 unlinked.');
     await loadAds(activeWs, currentManage);
   } catch (e) {
     toast(e.message, 'error');
@@ -843,6 +843,17 @@ async function loadCampaigns(wsId, canManage) {
   }
 }
 
+function getChannelChipClass(channel) {
+  const norm = (channel || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (norm.includes('pmax') || norm.includes('performance')) return 'pmax';
+  if (norm.includes('ctv') || norm.includes('connected')) return 'ctv';
+  if (norm.includes('rich')) return 'richmedia';
+  if (norm.includes('audio')) return 'audio';
+  if (norm.includes('video')) return 'video';
+  if (norm.includes('display')) return 'display';
+  return 'search';
+}
+
 function renderCampaigns(campaigns, canManage) {
   const tbody = $('campaigns-table-body');
   if (!tbody) return;
@@ -878,7 +889,7 @@ function renderCampaigns(campaigns, canManage) {
     // Channel cell
     const tdChannel = document.createElement('td');
     const chip = document.createElement('span');
-    chip.className = 'campaign-channel-chip ' + (c.channel === 'Performance Max' ? 'pmax' : c.channel.toLowerCase());
+    chip.className = 'campaign-channel-chip ' + getChannelChipClass(c.channel);
     chip.textContent = c.channel;
     tdChannel.appendChild(chip);
     tr.appendChild(tdChannel);
@@ -1028,7 +1039,7 @@ async function loadWorkspaceCampaigns(wsId) {
     // Channel
     const tdChannel = document.createElement('td');
     const chip = document.createElement('span');
-    chip.className = 'campaign-channel-chip ' + (c.channel === 'Performance Max' ? 'pmax' : c.channel.toLowerCase());
+    chip.className = 'campaign-channel-chip ' + getChannelChipClass(c.channel);
     chip.textContent = c.channel;
     tdChannel.appendChild(chip);
     tr.appendChild(tdChannel);

@@ -238,13 +238,13 @@ export function workspaceRoutes(app, db, session) {
       req.params.id, customerId, accountName, ctx.user.id, now,
     );
 
-    // Seed realistic Google Ads & Campaign Manager 360 campaigns
+    // Seed realistic Campaign Manager 360 & cross-publisher campaigns
     const seedCampaigns = [
-      { id: "c-101", name: "Search - Brand & High Intent", channel: "Search", status: "ENABLED", budget: "$45.00/day" },
-      { id: "c-102", name: "Performance Max - Q4 Promotions", channel: "Performance Max", status: "ENABLED", budget: "$120.00/day" },
-      { id: "c-103", name: "Search - Competitor Keywords", channel: "Search", status: "ENABLED", budget: "$60.00/day" },
-      { id: "c-104", name: "CM360 Display - Premium Direct Placements", channel: "Display", status: "ENABLED", budget: "$85.00/day" },
-      { id: "c-105", name: "CM360 Video - YouTube & Connected TV", channel: "Video", status: "PAUSED", budget: "$95.00/day" },
+      { id: "c-101", name: "CM360 Display - Premium Direct Placements", channel: "Display", status: "ENABLED", budget: "$150.00/day" },
+      { id: "c-102", name: "CM360 Video - Connected TV & Streaming Flights", channel: "Connected TV", status: "ENABLED", budget: "$220.00/day" },
+      { id: "c-103", name: "CM360 Rich Media - High Impact Expandables", channel: "Rich Media", status: "ENABLED", budget: "$85.00/day" },
+      { id: "c-104", name: "Google Search - Brand Core & High Intent", channel: "Search", status: "ENABLED", budget: "$65.00/day" },
+      { id: "c-105", name: "Digital Audio - Podcast & Streaming Audio Flights", channel: "Audio", status: "PAUSED", budget: "$45.00/day" },
     ];
 
     for (const c of seedCampaigns) {
@@ -330,11 +330,11 @@ export function workspaceRoutes(app, db, session) {
     // If no campaigns have been seeded yet for this workspace, seed realistic Google Ads campaigns
     if (!rows || rows.length === 0) {
       const defaultCampaigns = [
-        { id: "c-101", name: "Search - Brand & High Intent", channel: "Search", status: "ENABLED", budget: "$45.00/day" },
-        { id: "c-102", name: "Performance Max - Q4 Promotions", channel: "Performance Max", status: "ENABLED", budget: "$120.00/day" },
-        { id: "c-103", name: "Search - Competitor Keywords", channel: "Search", status: "ENABLED", budget: "$60.00/day" },
-        { id: "c-104", name: "Display - Retargeting All Visitors", channel: "Display", status: "PAUSED", budget: "$25.00/day" },
-        { id: "c-105", name: "YouTube Video - Product Demo", channel: "Video", status: "PAUSED", budget: "$35.00/day" },
+        { id: "c-101", name: "CM360 Display - Premium Direct Placements", channel: "Display", status: "ENABLED", budget: "$150.00/day" },
+        { id: "c-102", name: "CM360 Video - Connected TV & Streaming Flights", channel: "Connected TV", status: "ENABLED", budget: "$220.00/day" },
+        { id: "c-103", name: "CM360 Rich Media - High Impact Expandables", channel: "Rich Media", status: "ENABLED", budget: "$85.00/day" },
+        { id: "c-104", name: "Google Search - Brand Core & High Intent", channel: "Search", status: "ENABLED", budget: "$65.00/day" },
+        { id: "c-105", name: "Digital Audio - Podcast & Streaming Audio Flights", channel: "Audio", status: "PAUSED", budget: "$45.00/day" },
       ];
 
       for (const c of defaultCampaigns) {
