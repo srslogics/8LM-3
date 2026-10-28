@@ -201,6 +201,34 @@ details.role-guide p { margin-top: 10px; color: var(--gcp-text-2); line-height: 
 .ads-connect-pills { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .ads-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 1px solid var(--gcp-border); border-radius: 100px; font-size: 13px; color: var(--gcp-text-2); background: var(--gcp-surface); }
 
+.google-oauth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #ffffff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(60,64,67,0.15);
+  transition: all .15s ease;
+}
+.google-oauth-btn:hover {
+  background: #f8fafd;
+  border-color: #4285F4;
+  box-shadow: 0 2px 6px rgba(66,133,244,0.25);
+  color: #1a73e8;
+}
+.google-oauth-btn:active {
+  background: #ecf3fe;
+}
+
+
 .ads-status-connected { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 500; background: #e6f4ea; color: #1e8e3e; }
 .ads-status-connected::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #1e8e3e; flex-shrink: 0; }
 

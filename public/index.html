@@ -373,7 +373,7 @@
 
         <!-- Not connected -->
         <div id="ads-page-disconnected">
-          <!-- Hero prompt card -->
+          <!-- Hero prompt card with 1-Click Google OAuth -->
           <div class="gcp-card ads-hero-card">
             <div class="gcp-card-body" style="padding:40px 32px;text-align:center;">
               <svg width="56" height="56" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:16px;">
@@ -384,54 +384,73 @@
                 <circle cx="8" cy="28" r="6" fill="#EA4335"/>
                 <circle cx="32" cy="28" r="6" fill="#3C8BDC"/>
               </svg>
-              <h2 style="font-size:20px;font-weight:500;margin-bottom:8px;">Link Google Ads Account</h2>
-              <p style="color:var(--gcp-text-2);font-size:14px;max-width:500px;margin:0 auto 24px;">
-                Connect without Google Cloud Platform. Enter your 10-digit Google Ads Customer ID to send an MCC link request, then accept it in your Google Ads dashboard.
+              <h2 style="font-size:22px;font-weight:600;margin-bottom:8px;">Connect Google Ads &amp; Campaign Manager 360</h2>
+              <p style="color:var(--gcp-text-2);font-size:14px;max-width:540px;margin:0 auto 24px;">
+                Automated 1-Click integration powered by official Google Developer APIs. Connect once to automatically import and manage all your campaigns.
               </p>
+
+              <!-- 1-Click Google OAuth button -->
+              <div style="display:flex;justify-content:center;margin-bottom:24px;">
+                <button id="google-oauth-connect-btn" class="google-oauth-btn" type="button">
+                  <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                  <span>Connect with Google</span>
+                </button>
+              </div>
+
               <div class="ads-connect-pills">
                 <div class="ads-pill">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Zero GCP setup
+                  1-Click Instant Sync
                 </div>
                 <div class="ads-pill">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Manager (MCC) linking
+                  Google Ads &amp; Campaign 360
                 </div>
                 <div class="ads-pill">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Full campaign control
+                  Official Google OAuth 2.0
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Connect form card -->
-          <div class="gcp-card" id="ads-form-card">
-            <div class="gcp-card-header"><h2>Send account link request</h2></div>
-            <div class="gcp-card-body" style="max-width:560px;">
-              <form id="ads-form">
-                <div class="field">
-                  <label for="ads-customer-id">Google Ads Customer ID</label>
-                  <input id="ads-customer-id" type="text" placeholder="123-456-7890"
-                         pattern="[\d-]{10,13}" maxlength="13" required
-                         style="font-family:monospace;letter-spacing:1px;font-size:16px;height:48px;">
-                  <p style="font-size:12px;color:var(--gcp-text-3);margin-top:6px;">
-                    Find this in the top right corner of Google Ads (Format: 123-456-7890).
-                  </p>
-                </div>
-                <div class="field">
-                  <label for="ads-account-name">Account nickname <span style="font-weight:400;color:var(--gcp-text-3)">(optional)</span></label>
-                  <input id="ads-account-name" type="text" placeholder="e.g. Brand search campaigns" maxlength="120">
-                </div>
-                <div style="display:flex;gap:10px;margin-top:8px;">
-                  <button class="btn btn-filled" type="submit" id="ads-connect-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    Send link request
-                  </button>
-                </div>
-              </form>
+          <!-- Secondary manual option -->
+          <details style="margin-top:24px;text-align:center;">
+            <summary style="cursor:pointer;color:var(--gcp-blue);font-size:13px;font-weight:500;padding:8px;">
+              Or link manually using 10-digit Customer ID
+            </summary>
+            <div class="gcp-card" id="ads-form-card" style="margin-top:16px;text-align:left;">
+              <div class="gcp-card-header"><h2>Manual account link request</h2></div>
+              <div class="gcp-card-body" style="max-width:560px;">
+                <form id="ads-form">
+                  <div class="field">
+                    <label for="ads-customer-id">Google Ads Customer ID</label>
+                    <input id="ads-customer-id" type="text" placeholder="123-456-7890"
+                           pattern="[\d-]{10,13}" maxlength="13"
+                           style="font-family:monospace;letter-spacing:1px;font-size:16px;height:48px;">
+                    <p style="font-size:12px;color:var(--gcp-text-3);margin-top:6px;">
+                      Find this in the top right corner of Google Ads (Format: 123-456-7890).
+                    </p>
+                  </div>
+                  <div class="field">
+                    <label for="ads-account-name">Account nickname <span style="font-weight:400;color:var(--gcp-text-3)">(optional)</span></label>
+                    <input id="ads-account-name" type="text" placeholder="e.g. Brand search campaigns" maxlength="120">
+                  </div>
+                  <div style="display:flex;gap:10px;margin-top:8px;">
+                    <button class="btn btn-filled" type="submit" id="ads-connect-btn">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                      Send link request
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
+          </details>
         </div>
 
         <!-- Pending Link Approval State -->

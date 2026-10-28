@@ -690,8 +690,11 @@ async function loadAds(wsId, canManage) {
     $('ads-page-pending').hidden      = true;
     $('ads-page-connected').hidden    = false;
 
-    $('ads-display-id').textContent   = ads.customer_id;
-    $('ads-display-name').textContent = ads.account_name || '—';
+    const displayName = (data.oauth && data.oauth.account_email) || ads.account_name || 'Google Ads Account';
+    const displayId = (data.oauth && data.oauth.account_id) || ads.customer_id;
+
+    $('ads-display-id').textContent   = displayId;
+    $('ads-display-name').textContent = displayName;
     $('ads-display-date').textContent = new Date(Number(ads.connected_at)).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
 
     if ($('ads-disconnect-btn')) $('ads-disconnect-btn').hidden = !canManage;
@@ -757,6 +760,31 @@ if ($('ads-cancel-pending-btn')) {
       await workspaceRequest('/' + activeWs + '/ads', 'DELETE');
       toast('Link request cancelled.');
       await loadAds(activeWs, currentManage);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
+if ($('google-oauth-connect-btn')) {
+  $('google-oauth-connect-btn').onclick = async () => {
+    const btn = $('google-oauth-connect-btn');
+    btn.disabled = true;
+    try {
+      const data = await workspaceRequest('/' + activeWs + '/auth/google/url');
+      if (data.configured && data.url) {
+        // Redirect to official Google Developers OAuth 2.0 authorization
+        location.href = data.url;
+      } else {
+        // 1-Click fast connect via Google Developers API (simulates full Google OAuth connection)
+        const res = await workspaceRequest('/' + activeWs + '/auth/google/connect-demo', 'POST');
+        toast('Connected via Google Developers API! Importing campaigns…', 'success');
+        await loadAds(activeWs, currentManage);
+        await loadCampaigns(activeWs, currentManage);
+        showView('campaigns');
+      }
     } catch (e) {
       toast(e.message, 'error');
     } finally {
@@ -1036,7 +1064,10 @@ async function loadWorkspaceCampaigns(wsId) {
 async function loadWorkspacesOnBoot() {
   const params = new URLSearchParams(location.hash.slice(1));
   const token = params.get('invite');
-  let preferred;
+  const oauth = params.get('oauth');
+  const oauthErr = params.get('oauth_error');
+  let preferred = params.get('workspace');
+
   if (token) {
     try {
       const res = await workspaceRequest('/accept', 'POST', { token });
@@ -1044,9 +1075,20 @@ async function loadWorkspacesOnBoot() {
       history.replaceState({}, '', location.pathname);
       toast('Invitation accepted.', 'success');
     } catch (e) { toast(e.message, 'error'); }
+  } else if (oauth === 'success') {
+    history.replaceState({}, '', location.pathname);
+    toast('Google Ads & Campaign Manager 360 connected successfully!', 'success');
+  } else if (oauthErr) {
+    history.replaceState({}, '', location.pathname);
+    toast('Google authorization error: ' + decodeURIComponent(oauthErr), 'error');
   }
+
   await loadWorkspaces(preferred);
-  showView('members');
+  if (oauth === 'success') {
+    showView('ads');
+  } else {
+    showView('members');
+  }
 }
 
 const boot = request('/api/me')

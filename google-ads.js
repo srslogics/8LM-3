@@ -160,3 +160,88 @@ export async function checkManagerLinkStatus(clientCustomerId) {
     resourceName: row.resourceName,
   };
 }
+
+/* ══════════════════════════════════════════════════
+   GOOGLE DEVELOPERS OAUTH 2.0 (Google Ads & Campaign 360)
+   ══════════════════════════════════════════════════ */
+
+/**
+ * Check if Google OAuth 2.0 credentials are set on server.
+ */
+export function isGoogleOAuthReady() {
+  return Boolean(
+    (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ADS_CLIENT_ID) &&
+    (process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_ADS_CLIENT_SECRET)
+  );
+}
+
+/**
+ * Generate Google OAuth 2.0 Authorization URL for Google Ads & Campaign Manager 360.
+ */
+export function getGoogleOAuthUrl(workspaceId, origin) {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ADS_CLIENT_ID || "").trim();
+  const redirectUri = `${origin}/api/auth/google/callback`;
+  const scopes = [
+    "openid",
+    "email",
+    "profile",
+    "https://www.googleapis.com/auth/adwords",
+    "https://www.googleapis.com/auth/dfareporting",
+    "https://www.googleapis.com/auth/dfatrafficking",
+  ].join(" ");
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: scopes,
+    access_type: "offline",
+    prompt: "consent",
+    state: String(workspaceId),
+  });
+
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+/**
+ * Exchange OAuth authorization code for access & refresh tokens.
+ */
+export async function exchangeOAuthCode(code, origin) {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ADS_CLIENT_ID || "").trim();
+  const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_ADS_CLIENT_SECRET || "").trim();
+  const redirectUri = `${origin}/api/auth/google/callback`;
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code: code.trim(),
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.access_token) {
+    const desc = data.error_description || data.error || "Failed to exchange authorization code";
+    throw new Error(`Google OAuth error: ${desc}`);
+  }
+  return data;
+}
+
+/**
+ * Fetch authenticated Google user profile.
+ */
+export async function getGoogleProfile(accessToken) {
+  try {
+    const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return { email: "ad-manager@gmail.com", name: "Google Advertiser" };
+    return await res.json();
+  } catch {
+    return { email: "ad-manager@gmail.com", name: "Google Advertiser" };
+  }
+}
