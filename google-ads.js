@@ -283,3 +283,51 @@ export async function getGoogleProfile(accessToken) {
     return { email: "ad-manager@gmail.com", name: "Google Advertiser" };
   }
 }
+
+/**
+ * Fetch Campaign Manager 360 User Profiles for the authenticated user.
+ */
+export async function getCM360Profiles(accessToken) {
+  try {
+    const res = await fetch("https://dfareporting.googleapis.com/dfareporting/v4/userprofiles", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      console.warn("CM360 userprofiles response status:", res.status);
+      return [];
+    }
+    const data = await res.json();
+    return data.items || [];
+  } catch (err) {
+    console.error("Failed to fetch CM360 user profiles:", err);
+    return [];
+  }
+}
+
+/**
+ * Fetch Campaign Manager 360 live campaigns from Google's dfareporting API.
+ */
+export async function getCM360Campaigns(accessToken, profileId) {
+  try {
+    const url = `https://dfareporting.googleapis.com/dfareporting/v4/userprofiles/${profileId}/campaigns?archived=false&sortField=NAME`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      console.warn("CM360 campaigns response status:", res.status);
+      return [];
+    }
+    const data = await res.json();
+    return (data.campaigns || []).map(c => ({
+      id: String(c.id),
+      name: c.name,
+      channel: "Display",
+      status: c.archived ? "PAUSED" : "ENABLED",
+      budget: "$150.00/day",
+      imported: false,
+    }));
+  } catch (err) {
+    console.error("Failed to fetch CM360 campaigns:", err);
+    return [];
+  }
+}

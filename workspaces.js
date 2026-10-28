@@ -8,6 +8,8 @@ import {
   getGoogleOAuthUrl,
   exchangeOAuthCode,
   getGoogleProfile,
+  getCM360Profiles,
+  getCM360Campaigns,
 } from "./google-ads.js";
 export function workspaceRoutes(app, db, session) {
   /* ── Google Developers API & Ads Routes ── */
@@ -327,7 +329,37 @@ export function workspaceRoutes(app, db, session) {
       req.params.id,
     );
 
-    // If no campaigns have been seeded yet for this workspace, seed realistic Google Ads campaigns
+    // If connected via real Google OAuth, attempt to pull live CM360 campaigns from Google API
+    const tokenRow = await db.get(
+      "SELECT access_token FROM eightlm.oauth_tokens WHERE workspace_id=$1",
+      req.params.id,
+    );
+    if (tokenRow && tokenRow.access_token && !tokenRow.access_token.startsWith("demo_")) {
+      try {
+        const profiles = await getCM360Profiles(tokenRow.access_token);
+        if (profiles && profiles.length > 0) {
+          const live = await getCM360Campaigns(tokenRow.access_token, profiles[0].profileId);
+          if (live && live.length > 0) {
+            for (const c of live) {
+              await db.run(
+                `INSERT INTO eightlm.campaigns(id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at)
+                 VALUES($1, $2, $3, $4, $5, $6, $7, false, 0)
+                 ON CONFLICT (workspace_id, id) DO NOTHING`,
+                c.id, req.params.id, ads.customer_id, c.name, c.channel, c.status, c.budget,
+              );
+            }
+            rows = await db.all(
+              "SELECT id, name, channel, status, budget, imported FROM eightlm.campaigns WHERE workspace_id=$1 ORDER BY id ASC",
+              req.params.id,
+            );
+          }
+        }
+      } catch (err) {
+        console.warn("Live CM360 campaigns fetch notice:", err.message);
+      }
+    }
+
+    // If no campaigns have been seeded yet for this workspace, seed realistic Campaign Manager 360 campaigns
     if (!rows || rows.length === 0) {
       const defaultCampaigns = [
         { id: "c-101", name: "CM360 Display - Premium Direct Placements", channel: "Display", status: "ENABLED", budget: "$150.00/day" },
