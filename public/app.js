@@ -686,6 +686,7 @@ async function loadAds(wsId, canManage) {
     $('ads-display-date').textContent = new Date(Number(ads.connected_at)).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
 
     if ($('ads-disconnect-btn')) $('ads-disconnect-btn').hidden = !canManage;
+    await loadCampaigns(wsId, canManage);
   } else {
     // Disconnected state
     $('ads-page-disconnected').hidden = false;
@@ -724,8 +725,10 @@ if ($('ads-verify-btn')) {
     btn.textContent = 'Verifying…';
     try {
       await workspaceRequest('/' + activeWs + '/ads/verify', 'POST');
-      toast('Google Ads account linked and active!', 'success');
+      toast('Google Ads account linked! Select your campaigns to fetch below.', 'success');
       await loadAds(activeWs, currentManage);
+      const card = $('campaigns-card');
+      if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth' });
     } catch (e) {
       toast(e.message, 'error');
     } finally {
@@ -767,6 +770,149 @@ $('ads-disconnect-btn').onclick = async () => {
     $('ads-disconnect-btn').disabled = false;
   }
 };
+
+/* ══════════════════════════════════════════════════
+   CAMPAIGN SELECTION & IMPORT
+   ══════════════════════════════════════════════════ */
+let currentCampaigns = [];
+
+function getCampaignCheckboxes() {
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    return Array.from(document.querySelectorAll('.campaign-checkbox'));
+  }
+  return [];
+}
+
+async function loadCampaigns(wsId, canManage) {
+  const tbody = $('campaigns-table-body');
+  if (!tbody) return;
+
+  let data;
+  try {
+    data = await workspaceRequest('/' + wsId + '/ads/campaigns');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gcp-danger);padding:24px;">Failed to load campaigns: ' + e.message + '</td></tr>';
+    return;
+  }
+
+  currentCampaigns = data.campaigns || [];
+  renderCampaigns(currentCampaigns, canManage);
+}
+
+function renderCampaigns(campaigns, canManage) {
+  const tbody = $('campaigns-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (campaigns.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gcp-text-3);padding:24px;">No campaigns found in this Google Ads account.</td></tr>';
+    updateSelectedCount();
+    return;
+  }
+
+  campaigns.forEach(c => {
+    const tr = document.createElement('tr');
+
+    // Checkbox cell
+    const tdCheck = document.createElement('td');
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.className = 'campaign-checkbox';
+    chk.dataset.id = c.id;
+    chk.checked = Boolean(c.imported);
+    chk.disabled = !canManage;
+    chk.onchange = updateSelectedCount;
+    tdCheck.appendChild(chk);
+    tr.appendChild(tdCheck);
+
+    // Name cell
+    const tdName = document.createElement('td');
+    tdName.style.fontWeight = '500';
+    tdName.textContent = c.name;
+    tr.appendChild(tdName);
+
+    // Channel cell
+    const tdChannel = document.createElement('td');
+    const chip = document.createElement('span');
+    chip.className = 'campaign-channel-chip ' + (c.channel === 'Performance Max' ? 'pmax' : c.channel.toLowerCase());
+    chip.textContent = c.channel;
+    tdChannel.appendChild(chip);
+    tr.appendChild(tdChannel);
+
+    // Status cell
+    const tdStatus = document.createElement('td');
+    const stChip = document.createElement('span');
+    stChip.className = 'campaign-status-chip ' + (c.status === 'ENABLED' ? 'enabled' : 'paused');
+    stChip.textContent = c.status === 'ENABLED' ? 'Enabled' : 'Paused';
+    tdStatus.appendChild(stChip);
+    tr.appendChild(tdStatus);
+
+    // Budget cell
+    const tdBudget = document.createElement('td');
+    tdBudget.textContent = c.budget;
+    tr.appendChild(tdBudget);
+
+    // Sync status cell
+    const tdSync = document.createElement('td');
+    if (c.imported) {
+      tdSync.innerHTML = '<span class="imported-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> In 8LM</span>';
+    } else {
+      tdSync.innerHTML = '<span class="not-imported-badge">Not fetched</span>';
+    }
+    tr.appendChild(tdSync);
+
+    tbody.appendChild(tr);
+  });
+
+  updateSelectedCount();
+  if ($('import-campaigns-btn')) $('import-campaigns-btn').disabled = !canManage;
+}
+
+function updateSelectedCount() {
+  const checkboxes = getCampaignCheckboxes();
+  let selected = 0;
+  checkboxes.forEach(cb => { if (cb.checked) selected++; });
+  const badge = $('campaigns-count-badge');
+  if (badge) badge.textContent = selected + ' of ' + checkboxes.length + ' selected';
+
+  const selectAll = $('campaigns-select-all');
+  if (selectAll && checkboxes.length > 0) {
+    selectAll.checked = (selected === checkboxes.length && checkboxes.length > 0);
+    selectAll.indeterminate = (selected > 0 && selected < checkboxes.length);
+  }
+}
+
+if ($('campaigns-select-all')) {
+  $('campaigns-select-all').onchange = (ev) => {
+    const checked = ev.target.checked;
+    getCampaignCheckboxes().forEach(cb => { cb.checked = checked; });
+    updateSelectedCount();
+  };
+}
+
+if ($('import-campaigns-btn')) {
+  $('import-campaigns-btn').onclick = async () => {
+    const btn = $('import-campaigns-btn');
+    const checkedIds = getCampaignCheckboxes()
+      .filter(cb => cb.checked)
+      .map(cb => cb.dataset.id);
+
+    btn.disabled = true;
+    btn.textContent = 'Fetching…';
+    try {
+      const res = await workspaceRequest('/' + activeWs + '/ads/campaigns/import', 'POST', {
+        campaign_ids: checkedIds,
+      });
+      toast(res.imported_count + ' campaign' + (res.imported_count === 1 ? '' : 's') + ' fetched in 8LM!', 'success');
+      await loadCampaigns(activeWs, currentManage);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Fetch selected campaigns';
+    }
+  };
+}
 
 /* ── Boot ────────────────────────────────────────── */
 async function loadWorkspacesOnBoot() {

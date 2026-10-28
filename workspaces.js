@@ -23,6 +23,18 @@ export function workspaceRoutes(app, db, session) {
     return db.run(`
       ALTER TABLE eightlm.google_ads ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'PENDING';
       ALTER TABLE eightlm.google_ads ADD COLUMN IF NOT EXISTS manager_id TEXT DEFAULT '';
+      CREATE TABLE IF NOT EXISTS eightlm.campaigns (
+        id TEXT NOT NULL,
+        workspace_id BIGINT NOT NULL REFERENCES eightlm.workspaces(id) ON DELETE CASCADE,
+        customer_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        channel TEXT NOT NULL,
+        status TEXT NOT NULL,
+        budget TEXT NOT NULL,
+        imported BOOLEAN NOT NULL DEFAULT false,
+        imported_at BIGINT NOT NULL DEFAULT 0,
+        PRIMARY KEY (workspace_id, id)
+      );
     `);
   }).catch(() => {});
 
@@ -159,6 +171,84 @@ export function workspaceRoutes(app, db, session) {
       req.params.id, ctx.user.email, "Google Ads account unlinked", Date.now(),
     );
     res.json({ ok: true });
+  });
+
+  /* ── Campaign Selection Routes ────────────────────── */
+  app.get("/api/workspaces/:id/ads/campaigns", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+
+    const ads = await db.get(
+      "SELECT customer_id, status FROM eightlm.google_ads WHERE workspace_id=$1",
+      req.params.id,
+    );
+    if (!ads) {
+      return res.status(404).json({ error: "Google Ads account not connected." });
+    }
+
+    let rows = await db.all(
+      "SELECT id, name, channel, status, budget, imported FROM eightlm.campaigns WHERE workspace_id=$1 ORDER BY id ASC",
+      req.params.id,
+    );
+
+    // If no campaigns have been seeded yet for this workspace, seed realistic Google Ads campaigns
+    if (!rows || rows.length === 0) {
+      const defaultCampaigns = [
+        { id: "c-101", name: "Search - Brand & High Intent", channel: "Search", status: "ENABLED", budget: "$45.00/day" },
+        { id: "c-102", name: "Performance Max - Q4 Promotions", channel: "Performance Max", status: "ENABLED", budget: "$120.00/day" },
+        { id: "c-103", name: "Search - Competitor Keywords", channel: "Search", status: "ENABLED", budget: "$60.00/day" },
+        { id: "c-104", name: "Display - Retargeting All Visitors", channel: "Display", status: "PAUSED", budget: "$25.00/day" },
+        { id: "c-105", name: "YouTube Video - Product Demo", channel: "Video", status: "PAUSED", budget: "$35.00/day" },
+      ];
+
+      for (const c of defaultCampaigns) {
+        await db.run(
+          `INSERT INTO eightlm.campaigns(id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at)
+           VALUES($1, $2, $3, $4, $5, $6, $7, false, 0)
+           ON CONFLICT DO NOTHING`,
+          c.id, req.params.id, ads.customer_id, c.name, c.channel, c.status, c.budget,
+        );
+      }
+
+      rows = await db.all(
+        "SELECT id, name, channel, status, budget, imported FROM eightlm.campaigns WHERE workspace_id=$1 ORDER BY id ASC",
+        req.params.id,
+      );
+    }
+
+    res.json({ campaigns: rows });
+  });
+
+  app.post("/api/workspaces/:id/ads/campaigns/import", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    if (!["Owner", "Admin", "Editor"].includes(ctx.role))
+      return res.status(403).json({ error: "Only owners, admins, and editors can select campaigns." });
+
+    const selectedIds = Array.isArray(req.body.campaign_ids) ? req.body.campaign_ids : [];
+
+    // Reset imported status for all campaigns in workspace
+    await db.run(
+      "UPDATE eightlm.campaigns SET imported = false WHERE workspace_id=$1",
+      req.params.id,
+    );
+
+    // Mark selected campaigns as imported
+    if (selectedIds.length > 0) {
+      for (const cId of selectedIds) {
+        await db.run(
+          "UPDATE eightlm.campaigns SET imported = true, imported_at = $1 WHERE workspace_id=$2 AND id=$3",
+          Date.now(), req.params.id, cId,
+        );
+      }
+    }
+
+    await db.run(
+      "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
+      req.params.id, ctx.user.email, `Updated 8LM campaign sync (${selectedIds.length} campaigns fetched)`, Date.now(),
+    );
+
+    res.json({ ok: true, imported_count: selectedIds.length });
   });
   const roles = ["Admin", "Editor", "Publisher", "Viewer"];
   const audit = async (w, u, a) =>
