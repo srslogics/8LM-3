@@ -41,7 +41,6 @@
           </div>
           <p id="hint" hidden>Use at least 12 characters.</p>
         </div>
-
         <button id="submit" class="btn-primary" type="submit">Sign in</button>
       </form>
 
@@ -55,28 +54,27 @@
   </div>
 </div>
 
-<!-- ===================== APP SHELL (after login) ===================== -->
+<!-- ===================== APP SHELL ===================== -->
 <div id="app-shell" hidden>
 
-  <!-- Top Navigation Bar -->
+  <!-- Top nav -->
   <nav id="topnav">
     <a href="/" class="nav-logo" aria-label="8LM Console home">
       <div class="nav-logo-mark">8L</div>
       <span class="nav-logo-text">8LM <span>Console</span></span>
     </a>
-
     <div class="nav-divider"></div>
-    <span class="nav-product">Workspaces</span>
+    <span class="nav-product" id="nav-ws-name">Workspaces</span>
     <div class="nav-spacer"></div>
-
     <div class="nav-user">
       <span id="nav-email"></span>
-      <div class="nav-avatar" id="nav-avatar" title="Account">?</div>
+      <div class="nav-avatar" id="nav-avatar">?</div>
       <button id="nav-signout-btn" type="button">Sign out</button>
     </div>
   </nav>
 
   <div class="app-body">
+
     <!-- Sidebar -->
     <aside id="sidebar">
       <div class="sidebar-workspace-picker">
@@ -87,31 +85,44 @@
       <div class="sidebar-divider"></div>
 
       <button id="new-workspace" class="sidebar-btn" type="button">
-        <!-- plus icon -->
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         New workspace
       </button>
 
       <div class="sidebar-divider"></div>
-
       <span class="sidebar-section-label">Workspace</span>
 
-      <button class="sidebar-nav-item active" type="button">
+      <button class="sidebar-nav-item" id="nav-members" data-view="members" type="button">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
           <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
         Members &amp; access
       </button>
+
+      <div class="sidebar-divider"></div>
+      <span class="sidebar-section-label">Integrations</span>
+
+      <button class="sidebar-nav-item" id="nav-ads" data-view="ads" type="button">
+        <!-- Google Ads icon -->
+        <svg width="16" height="16" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="6" fill="#FABC04"/>
+          <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
+          <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
+          <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
+          <circle cx="8" cy="28" r="5" fill="#EA4335"/>
+          <circle cx="32" cy="28" r="5" fill="#3C8BDC"/>
+        </svg>
+        Google Ads
+        <span class="sidebar-badge" id="ads-sidebar-badge" hidden>Connected</span>
+      </button>
     </aside>
 
-    <!-- Main content -->
+    <!-- Main content area -->
     <main id="main-content">
-      <section id="account">
 
-        <!-- Page header -->
+      <!-- ══════ VIEW: Members & access ══════ -->
+      <section id="view-members" class="page-view" hidden>
         <div class="page-header">
           <div class="page-header-left" id="page-header-left">
             <div class="breadcrumb">8LM Console › Workspaces</div>
@@ -121,29 +132,20 @@
             <span id="your-role" class="role-chip"></span>
             <div id="workspace-actions" hidden style="display:flex;gap:8px;">
               <button id="rename-workspace" class="btn" type="button">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Rename
               </button>
               <button id="delete-workspace" class="btn btn-danger" type="button" hidden>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-                  <path d="M10 11v6"/><path d="M14 11v6"/>
-                  <path d="M9 6V4h6v2"/>
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 Delete workspace
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Invite card (owners/admins only) -->
+        <!-- Invite card -->
         <div class="gcp-card" id="invite-section" hidden>
-          <div class="gcp-card-header">
-            <h2>Invite member</h2>
-          </div>
+          <div class="gcp-card-header"><h2>Invite member</h2></div>
           <div class="gcp-card-body">
             <form id="invite-form">
               <div class="invite-grid">
@@ -158,153 +160,210 @@
                 <button class="btn btn-filled" type="submit" style="margin-bottom:18px;">Create link</button>
               </div>
             </form>
-
             <div id="invite-link-area" hidden>
               <div class="invite-link-row">
-                <input id="invite-link" readonly aria-label="Invitation link" placeholder="">
+                <input id="invite-link" readonly aria-label="Invitation link">
                 <button class="btn" type="button" id="copy-link-btn">Copy</button>
               </div>
             </div>
-            <p class="invite-link-note">
-              Share the invitation link with the intended person. They must sign in with the invited email.
-              Links expire after 7 days. No email is sent automatically.
-            </p>
-          </div>
-        </div>
-
-        <!-- Google Ads connection card -->
-        <div class="gcp-card" id="ads-card">
-          <div class="gcp-card-header">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <!-- Google Ads colour bar -->
-              <svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="40" height="40" rx="8" fill="#FABC04"/>
-                <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
-                <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
-                <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
-                <circle cx="8" cy="28" r="5" fill="#EA4335"/>
-                <circle cx="32" cy="28" r="5" fill="#3C8BDC"/>
-              </svg>
-              <h2>Google Ads</h2>
-            </div>
-            <span id="ads-status-chip" hidden></span>
-          </div>
-
-          <!-- Not connected state -->
-          <div class="gcp-card-body" id="ads-disconnected">
-            <p style="color:var(--gcp-text-2);font-size:13px;margin-bottom:20px;">
-              Connect a Google Ads account to manage campaigns directly from this workspace.
-            </p>
-            <form id="ads-form">
-              <div style="display:grid;grid-template-columns:1fr 200px auto;gap:10px;align-items:end;">
-                <div class="field">
-                  <label for="ads-customer-id">Customer ID</label>
-                  <input id="ads-customer-id" type="text" placeholder="123-456-7890"
-                         pattern="[\d-]{10,13}" maxlength="13" required
-                         style="font-family:monospace;letter-spacing:.5px;">
-                </div>
-                <div class="field">
-                  <label for="ads-account-name">Account name <span style="font-weight:400;color:var(--gcp-text-3)">(optional)</span></label>
-                  <input id="ads-account-name" type="text" placeholder="My Ads account" maxlength="120">
-                </div>
-                <button class="btn btn-filled" type="submit" style="margin-bottom:18px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                  </svg>
-                  Connect
-                </button>
-              </div>
-              <p style="font-size:12px;color:var(--gcp-text-3);">
-                Find your Customer ID in Google Ads under <strong>Help → Customer ID</strong>. Format: 123-456-7890.
-              </p>
-            </form>
-          </div>
-
-          <!-- Connected state -->
-          <div class="gcp-card-body" id="ads-connected" hidden>
-            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-              <div>
-                <div style="font-size:13px;color:var(--gcp-text-3);margin-bottom:4px;">Connected account</div>
-                <div style="font-size:16px;font-weight:500;font-family:monospace;color:var(--gcp-text);" id="ads-display-id"></div>
-                <div style="font-size:12px;color:var(--gcp-text-3);margin-top:3px;" id="ads-display-name"></div>
-                <div style="font-size:11px;color:var(--gcp-text-3);margin-top:2px;" id="ads-display-date"></div>
-              </div>
-              <div style="display:flex;gap:8px;">
-                <button class="btn" id="ads-edit-btn" type="button">Edit</button>
-                <button class="btn btn-danger" id="ads-disconnect-btn" type="button">Disconnect</button>
-              </div>
-            </div>
+            <p class="invite-link-note">Share the invitation link privately. Recipients must sign in with the invited email. Links expire after 7 days.</p>
           </div>
         </div>
 
         <!-- Members card -->
         <div class="gcp-card">
-          <div class="gcp-card-header">
-            <h2>Members</h2>
-          </div>
+          <div class="gcp-card-header"><h2>Members</h2></div>
           <div class="gcp-card-body no-pad">
-            <table class="data-table" id="members-table">
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+            <table class="data-table">
+              <thead><tr><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
               <tbody id="members"></tbody>
             </table>
           </div>
         </div>
 
-        <!-- Pending invitations card -->
+        <!-- Pending invitations -->
         <div class="gcp-card">
-          <div class="gcp-card-header">
-            <h2>Pending invitations</h2>
-          </div>
+          <div class="gcp-card-header"><h2>Pending invitations</h2></div>
           <div class="gcp-card-body no-pad">
-            <table class="data-table" id="invites-table">
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Expires</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+            <table class="data-table">
+              <thead><tr><th>Email</th><th>Role</th><th>Expires</th><th>Actions</th></tr></thead>
               <tbody id="invites"></tbody>
             </table>
           </div>
         </div>
 
-        <!-- Activity card -->
+        <!-- Activity -->
         <div class="gcp-card">
-          <div class="gcp-card-header">
-            <h2>Activity log</h2>
-          </div>
+          <div class="gcp-card-header"><h2>Activity log</h2></div>
           <div class="gcp-card-body no-pad">
             <div class="activity-list" id="activity"></div>
           </div>
         </div>
 
-        <!-- Role guide -->
         <details class="role-guide">
           <summary>Role permissions</summary>
-          <p>
-            <strong>Owner</strong>: full workspace control, transfer, delete.<br>
-            <strong>Admin</strong>: manage non-admin/non-owner members.<br>
-            <strong>Editor</strong>: edit campaigns.<br>
-            <strong>Publisher</strong>: edit and publish campaigns.<br>
-            <strong>Viewer</strong>: read-only access.
-          </p>
+          <p><strong>Owner</strong>: full workspace control, transfer, delete.<br>
+             <strong>Admin</strong>: manage non-admin/non-owner members.<br>
+             <strong>Editor</strong>: edit campaigns.<br>
+             <strong>Publisher</strong>: edit and publish campaigns.<br>
+             <strong>Viewer</strong>: read-only access.</p>
         </details>
-
       </section>
+
+      <!-- ══════ VIEW: Google Ads ══════ -->
+      <section id="view-ads" class="page-view" hidden>
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="breadcrumb">8LM Console › Integrations</div>
+            <h1>Google Ads</h1>
+          </div>
+        </div>
+
+        <!-- Not connected -->
+        <div id="ads-page-disconnected">
+          <!-- Hero prompt card -->
+          <div class="gcp-card ads-hero-card">
+            <div class="gcp-card-body" style="padding:40px 32px;text-align:center;">
+              <svg width="56" height="56" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:16px;">
+                <rect width="40" height="40" rx="10" fill="#FABC04"/>
+                <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
+                <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
+                <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
+                <circle cx="8" cy="28" r="6" fill="#EA4335"/>
+                <circle cx="32" cy="28" r="6" fill="#3C8BDC"/>
+              </svg>
+              <h2 style="font-size:20px;font-weight:500;margin-bottom:8px;">Connect Google Ads</h2>
+              <p style="color:var(--gcp-text-2);font-size:14px;max-width:440px;margin:0 auto 28px;">
+                Link a Google Ads account to manage campaigns, budgets and performance directly from this workspace.
+              </p>
+              <div class="ads-connect-pills">
+                <div class="ads-pill">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Campaign management
+                </div>
+                <div class="ads-pill">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Budget tracking
+                </div>
+                <div class="ads-pill">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Role-based access
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connect form card -->
+          <div class="gcp-card" id="ads-form-card">
+            <div class="gcp-card-header"><h2>Account details</h2></div>
+            <div class="gcp-card-body" style="max-width:560px;">
+              <form id="ads-form">
+                <div class="field">
+                  <label for="ads-customer-id">Google Ads Customer ID</label>
+                  <input id="ads-customer-id" type="text" placeholder="123-456-7890"
+                         pattern="[\d-]{10,13}" maxlength="13" required
+                         style="font-family:monospace;letter-spacing:1px;font-size:16px;height:48px;">
+                  <p style="font-size:12px;color:var(--gcp-text-3);margin-top:6px;">
+                    Find this in Google Ads → Help → Customer ID. Format: 123-456-7890.
+                  </p>
+                </div>
+                <div class="field">
+                  <label for="ads-account-name">Account nickname <span style="font-weight:400;color:var(--gcp-text-3)">(optional)</span></label>
+                  <input id="ads-account-name" type="text" placeholder="e.g. Brand campaigns" maxlength="120">
+                </div>
+                <div style="display:flex;gap:10px;margin-top:8px;">
+                  <button class="btn btn-filled" type="submit" id="ads-connect-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    Connect account
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connected -->
+        <div id="ads-page-connected" hidden>
+          <div class="gcp-card">
+            <div class="gcp-card-header">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <svg width="20" height="20" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#FABC04"/><path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/><path d="M8 28H20V8L8 28Z" fill="#34A853"/><path d="M20 8L32 28H20V8Z" fill="#FABC04"/><circle cx="8" cy="28" r="5" fill="#EA4335"/><circle cx="32" cy="28" r="5" fill="#3C8BDC"/></svg>
+                <h2>Google Ads account</h2>
+              </div>
+              <span class="ads-status-connected">Connected</span>
+            </div>
+            <div class="gcp-card-body">
+              <div class="ads-info-grid">
+                <div class="ads-info-item">
+                  <div class="ads-info-label">Customer ID</div>
+                  <div class="ads-info-value mono" id="ads-display-id"></div>
+                </div>
+                <div class="ads-info-item">
+                  <div class="ads-info-label">Account nickname</div>
+                  <div class="ads-info-value" id="ads-display-name">—</div>
+                </div>
+                <div class="ads-info-item">
+                  <div class="ads-info-label">Connected</div>
+                  <div class="ads-info-value" id="ads-display-date"></div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--gcp-border);">
+                <button class="btn" id="ads-edit-btn" type="button">Edit details</button>
+                <button class="btn btn-danger" id="ads-disconnect-btn" type="button">Disconnect account</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No permission notice -->
+        <div id="ads-no-permission" hidden>
+          <div class="gcp-card">
+            <div class="gcp-card-body" style="text-align:center;padding:40px 24px;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-text-3)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:12px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <p style="color:var(--gcp-text-2);font-size:14px;" id="ads-no-permission-msg">Only workspace owners and admins can manage Google Ads connections.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 </div>
 
-<!-- Toast notification -->
+<!-- Modal for Google Ads connection prompt -->
+<div id="modal-backdrop" class="modal-backdrop" hidden>
+  <div class="gcp-modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="8" fill="#FABC04"/>
+          <path d="M20 8L32 28H8L20 8Z" fill="#3C8BDC"/>
+          <path d="M8 28H20V8L8 28Z" fill="#34A853"/>
+          <path d="M20 8L32 28H20V8Z" fill="#FABC04"/>
+          <circle cx="8" cy="28" r="5" fill="#EA4335"/>
+          <circle cx="32" cy="28" r="5" fill="#3C8BDC"/>
+        </svg>
+        <h3 id="modal-title">Connect Google Ads</h3>
+      </div>
+      <button id="modal-close" class="modal-close-btn" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="modal-desc" style="color:var(--gcp-text-2);font-size:14px;line-height:1.6;margin-bottom:16px;">
+        Your workspace is ready. Link your Google Ads account to manage campaigns, monitor budgets, and streamline workflows.
+      </p>
+      <div style="background:var(--gcp-body-bg);border:1px solid var(--gcp-border);border-radius:6px;padding:12px 16px;font-size:13px;color:var(--gcp-text-2);display:flex;align-items:center;gap:10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-blue)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>You will need your 10-digit Google Ads Customer ID (e.g. 123-456-7890).</span>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--gcp-border);">
+      <button id="modal-cancel-btn" class="btn" type="button">Maybe later</button>
+      <button id="modal-confirm-btn" class="btn btn-filled" type="button">Connect Google Ads</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
 <div id="toast" role="status" aria-live="polite"></div>
 
 </body>

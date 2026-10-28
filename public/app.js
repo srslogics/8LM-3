@@ -1,9 +1,9 @@
-/* app.js – all frontend logic (auth + workspace) in one file */
+/* app.js – all frontend logic */
 'use strict';
 
-/* ── Helpers ─────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 
+/* ── Toast ───────────────────────────────────────── */
 let toastTimer;
 function toast(msg, type) {
   const el = $('toast');
@@ -50,9 +50,33 @@ async function workspaceRequest(path, method, body) {
 }
 
 /* ══════════════════════════════════════════════════
+   VIEW ROUTING  (members | ads)
+   ══════════════════════════════════════════════════ */
+let currentView = 'members';
+
+function showView(view) {
+  currentView = view;
+  const viewMembers = $('view-members');
+  const viewAds = $('view-ads');
+  if (viewMembers) viewMembers.hidden = view !== 'members';
+  if (viewAds) viewAds.hidden = view !== 'ads';
+
+  const navMembers = $('nav-members');
+  const navAds = $('nav-ads');
+  if (navMembers && navMembers.classList) navMembers.classList.toggle('active', view === 'members');
+  if (navAds && navAds.classList) navAds.classList.toggle('active', view === 'ads');
+
+  if (view === 'ads') loadAds(activeWs, currentManage);
+}
+
+if ($('nav-members')) $('nav-members').onclick = () => showView('members');
+if ($('nav-ads')) $('nav-ads').onclick = () => showView('ads');
+
+/* ══════════════════════════════════════════════════
    AUTH
    ══════════════════════════════════════════════════ */
 let authMode = 'login';
+let currentManage = false;
 
 function renderUser(user) {
   $('auth-screen').hidden = Boolean(user);
@@ -171,8 +195,7 @@ async function loadWorkspaces(preferred) {
   sel.replaceChildren();
   for (const w of workspaces) {
     const o = document.createElement('option');
-    o.value = w.id;
-    o.textContent = w.name;
+    o.value = w.id; o.textContent = w.name;
     sel.appendChild(o);
   }
 
@@ -180,6 +203,8 @@ async function loadWorkspaces(preferred) {
   if (activeWs) {
     sel.value = activeWs;
     await loadWorkspace();
+    // show view that was active (or default to members)
+    showView(currentView);
   } else {
     $('workspace-title').textContent = 'No workspaces';
   }
@@ -188,17 +213,15 @@ async function loadWorkspaces(preferred) {
 async function loadWorkspace() {
   const id = activeWs;
   let data;
-  try {
-    data = await workspaceRequest('/' + id);
-  } catch (e) {
-    showLoadError(e.message);
-    return;
-  }
+  try { data = await workspaceRequest('/' + id); }
+  catch (e) { showLoadError(e.message); return; }
   if (id !== activeWs) return;
 
   const w = data.workspace;
   const manage = w.role === 'Owner' || w.role === 'Admin';
+  currentManage = manage;
 
+  $('nav-ws-name').textContent     = w.name;
   $('workspace-title').textContent = w.name;
   $('your-role').textContent       = w.role;
   $('your-role').className         = roleChipClass(w.role);
@@ -206,9 +229,8 @@ async function loadWorkspace() {
   $('delete-workspace').hidden     = w.role !== 'Owner';
   $('invite-section').hidden       = !manage;
   $('invite-link-area').hidden     = true;
-  loadAds(id, manage); // non-blocking – don't await
 
-  /* Invite role options */
+  /* Invite roles */
   $('invite-role').replaceChildren();
   for (const r of roleNames.filter(r => w.role === 'Owner' || r !== 'Admin')) {
     const o = document.createElement('option');
@@ -276,8 +298,7 @@ async function loadWorkspace() {
     const tdE = document.createElement('td'); tdE.textContent = inv.email;
     const tdR = document.createElement('td');
     const chip = document.createElement('span');
-    chip.className = roleChipClass(inv.role); chip.textContent = inv.role;
-    tdR.appendChild(chip);
+    chip.className = roleChipClass(inv.role); chip.textContent = inv.role; tdR.appendChild(chip);
     const tdX = document.createElement('td');
     tdX.textContent = new Date(Number(inv.expires)).toLocaleDateString();
     const tdA = document.createElement('td');
@@ -292,9 +313,7 @@ async function loadWorkspace() {
   if (!data.invites.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td'); td.colSpan = 4;
-    td.innerHTML = '<div class="empty-state">' + (manage
-      ? 'No pending invitations.'
-      : 'Invitation details are visible to workspace administrators.') + '</div>';
+    td.innerHTML = '<div class="empty-state">' + (manage ? 'No pending invitations.' : 'Invitation details are visible to workspace administrators.') + '</div>';
     tr.appendChild(td); iBody.appendChild(tr);
   }
 
@@ -320,8 +339,38 @@ async function loadWorkspace() {
 /* ── Workspace controls ──────────────────────────── */
 $('workspace-select').onchange = async e => {
   activeWs = Number(e.target.value);
-  try { await loadWorkspace(); } catch (e) { toast(e.message, 'error'); }
+  try { await loadWorkspace(); showView(currentView); }
+  catch (e) { toast(e.message, 'error'); }
 };
+
+function promptConnectAds(workspaceName) {
+  const modal = $('modal-backdrop');
+  if (!modal) return;
+  const title = $('modal-title');
+  if (title) title.textContent = 'Connect Google Ads to ' + workspaceName;
+  modal.hidden = false;
+
+  const confirmBtn = $('modal-confirm-btn');
+  const cancelBtn = $('modal-cancel-btn');
+  const closeBtn = $('modal-close');
+
+  if (confirmBtn) {
+    confirmBtn.onclick = () => {
+      modal.hidden = true;
+      showView('ads');
+    };
+  }
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      modal.hidden = true;
+    };
+  }
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      modal.hidden = true;
+    };
+  }
+}
 
 $('new-workspace').onclick = async () => {
   const name = prompt('Workspace name');
@@ -329,7 +378,9 @@ $('new-workspace').onclick = async () => {
   try {
     const r = await workspaceRequest('', 'POST', { name });
     await loadWorkspaces(r.id);
+    showView('members');
     toast('Workspace "' + name + '" created.', 'success');
+    promptConnectAds(name);
   } catch (e) { toast(e.message, 'error'); }
 };
 
@@ -381,7 +432,104 @@ $('copy-link-btn').onclick = async () => {
   }
 };
 
-/* ── Handle invite token in URL ──────────────────── */
+/* ══════════════════════════════════════════════════
+   GOOGLE ADS PAGE
+   ══════════════════════════════════════════════════ */
+
+async function loadAds(wsId, canManage) {
+  if (!wsId) return;
+  let data;
+  try { data = await workspaceRequest('/' + wsId + '/ads'); }
+  catch (e) { return; }
+
+  const connected = Boolean(data.ads);
+
+  // Sidebar badge
+  $('ads-sidebar-badge').hidden = !connected;
+
+  if (!canManage && !connected) {
+    // Non-admin, nothing connected — show info message
+    $('ads-page-disconnected').hidden  = true;
+    $('ads-page-connected').hidden     = true;
+    $('ads-no-permission').hidden      = false;
+    $('ads-no-permission-msg').textContent = 'No Google Ads account has been connected to this workspace yet. Ask an owner or admin to connect one.';
+    return;
+  }
+
+  if (!canManage && connected) {
+    // Non-admin, connected — show read-only info
+    $('ads-page-disconnected').hidden  = true;
+    $('ads-page-connected').hidden     = false;
+    $('ads-no-permission').hidden      = true;
+    renderAdsConnected(data.ads);
+    $('ads-edit-btn').hidden           = true;
+    $('ads-disconnect-btn').hidden     = true;
+    return;
+  }
+
+  // Admin/Owner
+  $('ads-no-permission').hidden = true;
+  if (connected) {
+    $('ads-page-disconnected').hidden = true;
+    $('ads-page-connected').hidden    = false;
+    renderAdsConnected(data.ads);
+    $('ads-edit-btn').hidden          = false;
+    $('ads-disconnect-btn').hidden    = false;
+  } else {
+    $('ads-page-disconnected').hidden = false;
+    $('ads-page-connected').hidden    = true;
+    $('ads-customer-id').value  = '';
+    $('ads-account-name').value = '';
+  }
+}
+
+function renderAdsConnected(ads) {
+  $('ads-display-id').textContent   = ads.customer_id;
+  $('ads-display-name').textContent = ads.account_name || '—';
+  $('ads-display-date').textContent = new Date(Number(ads.connected_at)).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+}
+
+$('ads-form').onsubmit = async ev => {
+  ev.preventDefault();
+  const btn = $('ads-connect-btn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting…';
+  try {
+    await workspaceRequest('/' + activeWs + '/ads', 'POST', {
+      customer_id:  $('ads-customer-id').value,
+      account_name: $('ads-account-name').value,
+    });
+    toast('Google Ads account connected!', 'success');
+    await loadAds(activeWs, currentManage);
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Connect account';
+  }
+};
+
+$('ads-edit-btn').onclick = () => {
+  $('ads-page-connected').hidden    = true;
+  $('ads-page-disconnected').hidden = false;
+  $('ads-customer-id').focus();
+};
+
+$('ads-disconnect-btn').onclick = async () => {
+  if (!confirm('Disconnect the Google Ads account from this workspace?')) return;
+  $('ads-disconnect-btn').disabled = true;
+  try {
+    await workspaceRequest('/' + activeWs + '/ads', 'DELETE');
+    toast('Google Ads account disconnected.');
+    await loadAds(activeWs, currentManage);
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    $('ads-disconnect-btn').disabled = false;
+  }
+};
+
+/* ── Boot ────────────────────────────────────────── */
 async function loadWorkspacesOnBoot() {
   const params = new URLSearchParams(location.hash.slice(1));
   const token = params.get('invite');
@@ -395,91 +543,9 @@ async function loadWorkspacesOnBoot() {
     } catch (e) { toast(e.message, 'error'); }
   }
   await loadWorkspaces(preferred);
+  showView('members');
 }
 
-/* ── Boot ────────────────────────────────────────── */
 const boot = request('/api/me')
   .then(data => renderUser(data.user))
   .catch(() => { $('status').textContent = 'Could not connect. Please refresh and try again.'; });
-
-/* ══════════════════════════════════════════════════
-   GOOGLE ADS
-   ══════════════════════════════════════════════════ */
-
-async function loadAds(wsId, canManage) {
-  if (!wsId) return;
-  let data;
-  try { data = await workspaceRequest('/' + wsId + '/ads'); }
-  catch (e) { return; /* non-critical, don't block workspace UI */ }
-
-  const connected = Boolean(data.ads);
-  $('ads-disconnected').hidden = connected;
-  $('ads-connected').hidden    = !connected;
-
-  const chip = $('ads-status-chip');
-  if (connected) {
-    chip.hidden = false;
-    chip.className = 'ads-status-connected';
-    chip.textContent = 'Connected';
-    $('ads-display-id').textContent   = data.ads.customer_id;
-    $('ads-display-name').textContent = data.ads.account_name || '';
-    $('ads-display-date').textContent = 'Connected ' + new Date(Number(data.ads.connected_at)).toLocaleDateString();
-    // pre-fill form in case user clicks Edit
-    $('ads-customer-id').value   = data.ads.customer_id;
-    $('ads-account-name').value  = data.ads.account_name || '';
-  } else {
-    chip.hidden = true;
-    chip.className = '';
-    $('ads-customer-id').value  = '';
-    $('ads-account-name').value = '';
-  }
-
-  // hide connect form controls if user can't manage
-  $('ads-form').querySelectorAll('input,button').forEach(el => {
-    el.disabled = !canManage;
-  });
-  if ($('ads-edit-btn'))       $('ads-edit-btn').hidden       = !canManage;
-  if ($('ads-disconnect-btn')) $('ads-disconnect-btn').hidden = !canManage;
-}
-
-$('ads-form').onsubmit = async ev => {
-  ev.preventDefault();
-  const btn = ev.submitter || $('ads-form').querySelector('button[type=submit]');
-  btn.disabled = true;
-  try {
-    await workspaceRequest('/' + activeWs + '/ads', 'POST', {
-      customer_id:  $('ads-customer-id').value,
-      account_name: $('ads-account-name').value,
-    });
-    toast('Google Ads account connected.', 'success');
-    await loadAds(activeWs, true);
-    // reload activity log
-    await loadWorkspace();
-  } catch (e) {
-    toast(e.message, 'error');
-  } finally {
-    btn.disabled = false;
-  }
-};
-
-$('ads-edit-btn').onclick = () => {
-  // show the form again so user can update customer ID
-  $('ads-connected').hidden    = true;
-  $('ads-disconnected').hidden = false;
-  $('ads-customer-id').focus();
-};
-
-$('ads-disconnect-btn').onclick = async () => {
-  if (!confirm('Disconnect the Google Ads account from this workspace?')) return;
-  $('ads-disconnect-btn').disabled = true;
-  try {
-    await workspaceRequest('/' + activeWs + '/ads', 'DELETE');
-    toast('Google Ads account disconnected.');
-    await loadAds(activeWs, true);
-    await loadWorkspace();
-  } catch (e) {
-    toast(e.message, 'error');
-  } finally {
-    $('ads-disconnect-btn').disabled = false;
-  }
-};
