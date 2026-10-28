@@ -513,8 +513,11 @@
             <div class="gcp-card-body">
               <div class="ads-info-grid">
                 <div class="ads-info-item">
-                  <div class="ads-info-label">Network / Account ID</div>
-                  <div class="ads-info-value mono" id="ads-display-id"></div>
+                  <div class="ads-info-label">Customer / Account ID</div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="ads-info-value mono" id="ads-display-id"></span>
+                    <button class="btn btn-outline" id="edit-customer-id-btn" type="button" style="font-size:11px;padding:2px 8px;border-radius:4px;" title="Set your 10-digit Google Ads Customer ID">Change ID</button>
+                  </div>
                 </div>
                 <div class="ads-info-item">
                   <div class="ads-info-label">Advertiser Profile</div>
@@ -554,6 +557,10 @@
             </div>
             <div id="dev-token-notice" style="margin:16px 20px 0;padding:12px 16px;background:rgba(66,133,244,0.06);border:1px solid rgba(66,133,244,0.22);border-radius:6px;font-size:12px;color:var(--gcp-text);display:flex;align-items:center;gap:10px;" hidden>
               <span>🔑 <strong>Google Ads API Notice:</strong> To automatically sync live Search &amp; Performance Max campaigns from <code>ads.google.com</code>, add <code>GOOGLE_ADS_DEVELOPER_TOKEN</code> in your Render environment variables.</span>
+            </div>
+            <div id="google-ads-api-notice" style="margin:16px 20px 0;padding:12px 16px;background:rgba(234,67,53,0.08);border:1px solid rgba(234,67,53,0.25);border-radius:6px;font-size:12px;color:var(--gcp-danger);display:flex;align-items:flex-start;gap:10px;" hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span id="google-ads-api-notice-text"></span>
             </div>
             <div class="gcp-card-body no-pad">
               <table class="data-table">

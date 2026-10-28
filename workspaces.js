@@ -315,28 +315,59 @@ export function workspaceRoutes(app, db, session) {
       req.params.id,
     );
 
+    let apiNotice = null;
+    let accessibleList = [];
+
     // If connected via Google OAuth, attempt to pull live Google Ads & CM360 campaigns
     if (tokenRow && tokenRow.access_token && !tokenRow.access_token.startsWith("demo_")) {
       // 1. Google Ads API (Search, Performance Max, Display, Video)
       if (devToken) {
-        try {
-          const customers = await listAccessibleGoogleAdsCustomers(tokenRow.access_token);
-          const targetCustomer = (customers && customers[0]) || ads.customer_id;
-          if (targetCustomer && /^\d+$/.test(targetCustomer.replace(/-/g, ""))) {
-            const liveAds = await fetchGoogleAdsCampaigns(tokenRow.access_token, targetCustomer);
-            if (liveAds && liveAds.length > 0) {
-              for (const c of liveAds) {
+        const custRes = await listAccessibleGoogleAdsCustomers(tokenRow.access_token);
+        if (custRes.ok) {
+          accessibleList = custRes.customerIds || [];
+          const targets = new Set(accessibleList);
+          // If workspace has a numeric customer ID, add it
+          if (ads.customer_id && /^\d+$/.test(ads.customer_id.replace(/-/g, ""))) {
+            targets.add(ads.customer_id.replace(/-/g, "").trim());
+          }
+          if (req.query.customer_id && /^\d+$/.test(req.query.customer_id.replace(/-/g, ""))) {
+            targets.add(req.query.customer_id.replace(/-/g, "").trim());
+          }
+
+          let foundAny = false;
+          for (const targetId of targets) {
+            const searchRes = await fetchGoogleAdsCampaigns(tokenRow.access_token, targetId);
+            if (searchRes.ok && searchRes.campaigns.length > 0) {
+              foundAny = true;
+              // Format target ID as XXX-XXX-XXXX
+              const formattedId = targetId.length === 10
+                ? `${targetId.slice(0,3)}-${targetId.slice(3,6)}-${targetId.slice(6)}`
+                : targetId;
+
+              // Update account ID to the active Google Ads Customer ID
+              await db.run(
+                "UPDATE eightlm.google_ads SET customer_id=$1 WHERE workspace_id=$2",
+                formattedId, req.params.id,
+              );
+
+              for (const c of searchRes.campaigns) {
                 await db.run(
                   `INSERT INTO eightlm.campaigns(id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at)
                    VALUES($1, $2, $3, $4, $5, $6, $7, false, 0)
                    ON CONFLICT (workspace_id, id) DO NOTHING`,
-                  c.id, req.params.id, targetCustomer, c.name, c.channel, c.status, c.budget,
+                  c.id, req.params.id, formattedId, c.name, c.channel, c.status, c.budget,
                 );
               }
+            } else if (!searchRes.ok && !apiNotice) {
+              apiNotice = searchRes.error;
             }
           }
-        } catch (e) {
-          console.warn("Google Ads API live fetch notice:", e.message);
+
+          if (targets.size === 0) {
+            apiNotice = "No Google Ads accounts were returned for this Google login.";
+          }
+        } else {
+          apiNotice = custRes.error;
         }
       }
 
@@ -367,11 +398,34 @@ export function workspaceRoutes(app, db, session) {
       req.params.id,
     );
 
+    const currentAds = await db.get(
+      "SELECT customer_id, status, account_name FROM eightlm.google_ads WHERE workspace_id=$1",
+      req.params.id,
+    );
+
     res.json({
       campaigns: rows || [],
       hasDeveloperToken: Boolean(devToken),
-      customer_id: ads.customer_id,
+      apiNotice: apiNotice || null,
+      accessibleCustomers: accessibleList,
+      customer_id: currentAds?.customer_id || ads.customer_id,
     });
+  });
+
+  // Manually update Google Ads Customer ID (10-digit XXX-XXX-XXXX)
+  app.post("/api/workspaces/:id/ads/customer-id", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    if (!["Owner", "Admin", "Editor"].includes(ctx.role))
+      return res.status(403).json({ error: "Only owners and admins can update customer ID." });
+    const { customer_id } = req.body;
+    const clean = (customer_id || "").replace(/[^0-9]/g, "");
+    if (clean.length !== 10) {
+      return res.status(400).json({ error: "Customer ID must be a 10-digit Google Ads account ID (e.g. 123-456-7890)." });
+    }
+    const formatted = `${clean.slice(0,3)}-${clean.slice(3,6)}-${clean.slice(6)}`;
+    await db.run("UPDATE eightlm.google_ads SET customer_id=$1 WHERE workspace_id=$2", formatted, req.params.id);
+    res.json({ ok: true, customer_id: formatted });
   });
 
   // Clear workspace campaigns

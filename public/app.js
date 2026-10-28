@@ -837,8 +837,23 @@ async function loadCampaigns(wsId, canManage) {
     devNotice.hidden = Boolean(data.hasDeveloperToken);
   }
 
+  const apiNotice = $('google-ads-api-notice');
+  const apiNoticeText = $('google-ads-api-notice-text');
+  if (apiNotice && apiNoticeText) {
+    if (data.apiNotice) {
+      apiNotice.hidden = false;
+      apiNoticeText.innerHTML = '<strong>Google Ads API Notice:</strong> ' + data.apiNotice;
+    } else {
+      apiNotice.hidden = true;
+    }
+  }
+
+  if (data.customer_id && $('ads-display-id')) {
+    $('ads-display-id').textContent = data.customer_id;
+  }
+
   currentCampaigns = data.campaigns || [];
-  renderCampaigns(currentCampaigns, canManage, data.hasDeveloperToken);
+  renderCampaigns(currentCampaigns, canManage, data.hasDeveloperToken, data.apiNotice);
 
   const importedCount = currentCampaigns.filter(c => c.imported).length;
   const cBadge = $('campaigns-sidebar-badge');
@@ -859,15 +874,18 @@ function getChannelChipClass(channel) {
   return 'search';
 }
 
-function renderCampaigns(campaigns, canManage, hasDevToken) {
+function renderCampaigns(campaigns, canManage, hasDevToken, apiNotice) {
   const tbody = $('campaigns-table-body');
   if (!tbody) return;
   tbody.innerHTML = '';
 
   if (campaigns.length === 0) {
-    const hint = hasDevToken === false
-      ? 'No campaigns imported yet. Add GOOGLE_ADS_DEVELOPER_TOKEN to Render to automatically sync live Search &amp; Performance Max campaigns.'
-      : 'No active campaigns found in this Google Ads account.';
+    let hint = 'No active campaigns found in this Google Ads account.';
+    if (hasDevToken === false) {
+      hint = 'No campaigns imported yet. Add GOOGLE_ADS_DEVELOPER_TOKEN to Render to automatically sync live Search &amp; Performance Max campaigns.';
+    } else if (apiNotice) {
+      hint = 'Google Ads API notice: ' + apiNotice + '<br><span style="font-size:12px;margin-top:8px;display:inline-block;color:var(--gcp-text-2);">Tip: If your Google Ads account is a client account under a manager (MCC), click "Change ID" above to enter your 10-digit Google Ads account ID directly.</span>';
+    }
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gcp-text-3);padding:32px;line-height:1.6;">' + hint + '</td></tr>';
     updateSelectedCount();
     return;
@@ -982,6 +1000,22 @@ if ($('refresh-campaigns-btn')) {
   $('refresh-campaigns-btn').onclick = async () => {
     toast('Syncing campaigns…');
     await loadCampaigns(activeWs, currentManage);
+  };
+}
+
+if ($('edit-customer-id-btn')) {
+  $('edit-customer-id-btn').onclick = async () => {
+    const currentId = ($('ads-display-id') ? $('ads-display-id').textContent : '') || '';
+    const newId = prompt('Enter your 10-digit Google Ads Customer ID (e.g. 123-456-7890 from the top-right of your Google Ads dashboard):', currentId);
+    if (!newId || newId.trim() === currentId.trim()) return;
+    try {
+      const res = await workspaceRequest('/' + activeWs + '/ads/customer-id', 'POST', { customer_id: newId });
+      toast('Customer ID updated to ' + res.customer_id + '! Syncing…', 'success');
+      if ($('ads-display-id')) $('ads-display-id').textContent = res.customer_id;
+      await loadCampaigns(activeWs, currentManage);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
   };
 }
 

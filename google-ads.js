@@ -345,7 +345,8 @@ export function getGoogleAdsDeveloperToken() {
  */
 export async function listAccessibleGoogleAdsCustomers(accessToken) {
   const devToken = getGoogleAdsDeveloperToken();
-  if (!devToken || !accessToken) return [];
+  if (!devToken) return { ok: false, error: "Missing GOOGLE_ADS_DEVELOPER_TOKEN on server." };
+  if (!accessToken) return { ok: false, error: "Missing Google OAuth access token." };
 
   try {
     const res = await fetch("https://googleads.googleapis.com/v18/customers:listAccessibleCustomers", {
@@ -354,48 +355,31 @@ export async function listAccessibleGoogleAdsCustomers(accessToken) {
         "developer-token": devToken,
       },
     });
+
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.warn("Google Ads listAccessibleCustomers warning:", res.status, err.error?.message || "");
-      return [];
+      const msg = data.error?.message || data.error?.details?.[0]?.errors?.[0]?.message || `HTTP ${res.status}`;
+      return { ok: false, status: res.status, error: msg, details: data.error };
     }
-    const data = await res.json();
-    return (data.resourceNames || []).map(r => r.replace("customers/", ""));
+
+    const customerIds = (data.resourceNames || []).map(r => r.replace("customers/", ""));
+    return { ok: true, customerIds };
   } catch (err) {
-    console.error("Failed to list accessible Google Ads customers:", err.message);
-    return [];
+    return { ok: false, error: err.message };
   }
 }
 
 /**
  * Query live Google Ads campaigns (Search, PMax, Display, Video) for a customer account.
  */
-export async function fetchGoogleAdsCampaigns(accessToken, customerId) {
+export async function fetchGoogleAdsCampaigns(accessToken, customerId, managerId = null) {
   const devToken = getGoogleAdsDeveloperToken();
-  if (!devToken || !accessToken || !customerId) return [];
+  if (!devToken) return { ok: false, error: "Missing GOOGLE_ADS_DEVELOPER_TOKEN on server." };
+  if (!accessToken || !customerId) return { ok: false, error: "Missing parameters for Google Ads search." };
 
   const cleanId = customerId.replace(/-/g, "").trim();
-  try {
-    const res = await fetch(`https://googleads.googleapis.com/v18/customers/${cleanId}/googleAds:search`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "developer-token": devToken,
-        "login-customer-id": cleanId,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: `SELECT campaign.id, campaign.name, campaign.advertising_channel_type, campaign.status, campaign_budget.amount_micros FROM campaign ORDER BY campaign.id DESC LIMIT 50`,
-      }),
-    });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.warn("Google Ads campaigns search warning:", res.status, err.error?.message || "");
-      return [];
-    }
-
-    const data = await res.json();
+  const parseResults = (data) => {
     const formatChannel = (type) => {
       const s = String(type || "").toUpperCase();
       if (s.includes("SEARCH")) return "Search";
@@ -406,7 +390,7 @@ export async function fetchGoogleAdsCampaigns(accessToken, customerId) {
       return type || "Search";
     };
 
-    return (data.results || []).map(r => ({
+    const campaigns = (data.results || []).map(r => ({
       id: String(r.campaign.id),
       name: r.campaign.name || `Campaign ${r.campaign.id}`,
       channel: formatChannel(r.campaign.advertisingChannelType),
@@ -416,8 +400,47 @@ export async function fetchGoogleAdsCampaigns(accessToken, customerId) {
         : "$0.00/day",
       imported: false,
     }));
+
+    return { ok: true, campaigns };
+  };
+
+  const query = "SELECT campaign.id, campaign.name, campaign.advertising_channel_type, campaign.status, campaign_budget.amount_micros FROM campaign ORDER BY campaign.id DESC LIMIT 50";
+
+  // Try 1: Call without login-customer-id (direct client ownership)
+  try {
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      "developer-token": devToken,
+      "Content-Type": "application/json",
+    };
+    if (managerId) headers["login-customer-id"] = managerId.replace(/-/g, "").trim();
+
+    let res = await fetch(`https://googleads.googleapis.com/v18/customers/${cleanId}/googleAds:search`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ query }),
+    });
+
+    let data = await res.json().catch(() => ({}));
+
+    // If failed and no login-customer-id was set, try setting login-customer-id = cleanId
+    if (!res.ok && !headers["login-customer-id"]) {
+      headers["login-customer-id"] = cleanId;
+      res = await fetch(`https://googleads.googleapis.com/v18/customers/${cleanId}/googleAds:search`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ query }),
+      });
+      data = await res.json().catch(() => ({}));
+    }
+
+    if (!res.ok) {
+      const msg = data.error?.message || data.error?.details?.[0]?.errors?.[0]?.message || `HTTP ${res.status}`;
+      return { ok: false, status: res.status, error: msg, details: data.error };
+    }
+
+    return parseResults(data);
   } catch (err) {
-    console.error("Failed to fetch Google Ads campaigns:", err.message);
-    return [];
+    return { ok: false, error: err.message };
   }
 }
