@@ -1,0 +1,12 @@
+*
+!requirements.txt
+!app/
+!app/**
+!public/
+!public/**
+!migrations/
+!migrations/**
+!scripts/
+!scripts/start.sh
+**/__pycache__
+**/*.pyc

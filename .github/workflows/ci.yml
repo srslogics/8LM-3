@@ -1,0 +1,41 @@
+name: Python checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: eightlm
+          POSTGRES_PASSWORD: integration-only
+          POSTGRES_DB: eightlm_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U eightlm -d eightlm_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://eightlm:integration-only@localhost:5432/eightlm_test
+      DATABASE_URL_UNPOOLED: postgresql://eightlm:integration-only@localhost:5432/eightlm_test
+      NEON_BRANCH: ci-isolated
+      APP_ENV: test
+      PORT: "8019"
+      TEST_BASE_URL: http://localhost:8019
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install uv==0.13.6
+      - run: uv sync --frozen --extra dev
+      - run: uv run --frozen --extra dev ruff check app tests
+      - run: uv run --frozen --extra dev ruff format --check app tests
+      - run: uv run --frozen --extra dev python -m compileall -q app
+      - run: uv run --frozen --extra dev python -m pytest --integration -q
+      - run: uv run --frozen --extra dev playwright install --with-deps chrome
+      - name: Browser regression
+        run: |
+          uv run --frozen --extra dev uvicorn app.main:create_app --factory --port 8019 --no-access-log &
+          for i in $(seq 1 30); do curl -fsS http://localhost:8019/health && break || sleep 1; done
+          uv run --frozen --extra dev python -m pytest --browser tests/test_browser.py -q
+      - run: uv run --frozen --extra dev pip-audit -r requirements.txt
