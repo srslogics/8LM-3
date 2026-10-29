@@ -309,7 +309,7 @@
           </div>
           <div class="gcp-card kpi-card">
             <div class="kpi-label">Total Daily Budget</div>
-            <div class="kpi-value" id="kpi-total-budget">$0.00</div>
+            <div class="kpi-value" id="kpi-total-budget">Rs. 0.00</div>
           </div>
           <div class="gcp-card kpi-card">
             <div class="kpi-label">Est. Monthly Impressions</div>
@@ -448,7 +448,7 @@
                 <div class="wizard-step-icon" id="wizard-icon-8">8</div>
                 <div class="wizard-step-info">
                   <div class="wizard-step-title">Budget</div>
-                  <div class="wizard-step-sub" id="wizard-nav-sub-8">$50.00/day</div>
+                  <div class="wizard-step-sub" id="wizard-nav-sub-8">Rs. 500.00/day</div>
                 </div>
               </li>
               <li class="wizard-step-item" data-step="9" id="wizard-nav-step-9">
@@ -737,8 +737,8 @@
                     <span>Set a target cost per action (Target CPA)</span>
                   </label>
                   <div id="wizard-cpa-box" hidden style="margin-top:10px;display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:14px;color:var(--gcp-text-2);">$</span>
-                    <input type="number" id="wizard-cpa-val" class="gcp-input" value="" placeholder="10.00" step="0.5" style="width:120px;height:36px;">
+                    <span style="font-size:14px;color:var(--gcp-text-2);font-weight:600;">Rs.</span>
+                    <input type="number" id="wizard-cpa-val" class="gcp-input" value="" placeholder="50.00" step="5" style="width:120px;height:36px;">
                     <span style="font-size:12px;color:var(--gcp-text-3);">Target CPA</span>
                   </div>
                 </div>
@@ -1129,34 +1129,34 @@
 
                 <!-- 3 Tiers Grid -->
                 <div class="budget-tier-grid" id="budget-tiers-container">
-                  <div class="budget-tier-card" data-budget="25.00" data-clicks="320" data-cpc="0.55">
-                    <div class="budget-tier-amount">$25.00 <span style="font-size:12px;font-weight:normal;color:var(--gcp-text-3);">/ day</span></div>
+                  <div class="budget-tier-card" data-budget="250.00" data-clicks="370" data-cpc="4.70">
+                    <div class="budget-tier-amount">Rs. 250.00 <span style="font-size:12px;font-weight:normal;color:var(--gcp-text-3);">/ day</span></div>
                     <div style="font-size:12px;color:var(--gcp-text-2);margin-bottom:6px;">Conservative reach</div>
                     <div class="budget-tier-forecast">
-                      <div>~320 weekly clicks</div>
-                      <div>~$0.55 avg. CPC</div>
-                      <div>$175.00 weekly cost</div>
+                      <div>~370 weekly clicks</div>
+                      <div>~Rs. 4.70 avg. CPC</div>
+                      <div>Rs. 1,750.00 weekly cost</div>
                     </div>
                   </div>
 
-                  <div class="budget-tier-card selected" data-budget="50.00" data-clicks="740" data-cpc="0.47">
+                  <div class="budget-tier-card selected" data-budget="500.00" data-clicks="740" data-cpc="4.70">
                     <div class="budget-tier-badge">Recommended</div>
-                    <div class="budget-tier-amount">$50.00 <span style="font-size:12px;font-weight:normal;color:var(--gcp-text-3);">/ day</span></div>
+                    <div class="budget-tier-amount">Rs. 500.00 <span style="font-size:12px;font-weight:normal;color:var(--gcp-text-3);">/ day</span></div>
                     <div style="font-size:12px;color:var(--gcp-text-2);margin-bottom:6px;">Optimal growth &amp; conversions</div>
                     <div class="budget-tier-forecast">
                       <div>~740 weekly clicks</div>
-                      <div>~$0.47 avg. CPC</div>
-                      <div>$350.00 weekly cost</div>
+                      <div>~Rs. 4.70 avg. CPC</div>
+                      <div>Rs. 3,500.00 weekly cost</div>
                     </div>
                   </div>
 
-                  <div class="budget-tier-card" data-budget="100.00" data-clicks="1650" data-cpc="0.42">
-                    <div class="budget-tier-amount">$100.00 <span style="font-size:12px;font-weight:normal;color:var(--gcp-text-3);">/ day</span></div>
+                  <div class="budget-tier-card" data-budget="1000.00" data-clicks="1500" data-cpc="4.60">
+                    <div class="budget-tier-amount">Rs. 1,000.00 <span style="font-size:12px;font-weight:normal;color:var(--gcp-text-3);">/ day</span></div>
                     <div style="font-size:12px;color:var(--gcp-text-2);margin-bottom:6px;">Maximum market share</div>
                     <div class="budget-tier-forecast">
-                      <div>~1,650 weekly clicks</div>
-                      <div>~$0.42 avg. CPC</div>
-                      <div>$700.00 weekly cost</div>
+                      <div>~1,500 weekly clicks</div>
+                      <div>~Rs. 4.60 avg. CPC</div>
+                      <div>Rs. 7,000.00 weekly cost</div>
                     </div>
                   </div>
                 </div>
@@ -1165,8 +1165,8 @@
                 <div style="border-top:1px solid var(--gcp-border);padding-top:18px;">
                   <label for="wizard-budget-input" style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Or set custom budget</label>
                   <div style="display:flex;align-items:center;border:1px solid var(--gcp-border);border-radius:4px;overflow:hidden;background:var(--gcp-surface);height:42px;max-width:280px;">
-                    <span style="padding:0 12px;color:var(--gcp-text-3);font-size:15px;font-weight:600;">$</span>
-                    <input type="number" id="wizard-budget-input" min="1" step="0.5" value="50.00" required style="border:none;outline:none;width:100%;font-size:14px;background:transparent;">
+                    <span style="padding:0 12px;color:var(--gcp-text-3);font-size:14px;font-weight:600;">Rs.</span>
+                    <input type="number" id="wizard-budget-input" min="50" step="50" value="500.00" required style="border:none;outline:none;width:100%;font-size:14px;background:transparent;">
                     <span style="padding:0 12px;color:var(--gcp-text-3);font-size:12px;">/day</span>
                   </div>
                 </div>
@@ -1185,11 +1185,11 @@
                   </div>
                   <div>
                     <div style="font-size:11px;color:var(--gcp-text-3);text-transform:uppercase;">Average CPC</div>
-                    <div style="font-size:20px;font-weight:600;color:var(--gcp-text);" id="forecast-cpc">~$0.47</div>
+                    <div style="font-size:20px;font-weight:600;color:var(--gcp-text);" id="forecast-cpc">~Rs. 4.70</div>
                   </div>
                   <div>
                     <div style="font-size:11px;color:var(--gcp-text-3);text-transform:uppercase;">Weekly Spend</div>
-                    <div style="font-size:20px;font-weight:600;color:var(--gcp-text);" id="forecast-spend">~$350.00</div>
+                    <div style="font-size:20px;font-weight:600;color:var(--gcp-text);" id="forecast-spend">~Rs. 3,500.00</div>
                   </div>
                   <div>
                     <div style="font-size:11px;color:var(--gcp-text-3);text-transform:uppercase;">Est. Conv. Rate</div>
@@ -1265,8 +1265,8 @@
                   <button type="button" class="btn btn-outline" style="font-size:11px;padding:2px 8px;" id="rev-edit-step-8">Edit</button>
                 </div>
                 <div class="review-section-body">
-                  <div class="review-item-row"><span class="review-item-label">Daily budget</span><strong class="review-item-val" id="review-budget">$50.00 / day</strong></div>
-                  <div class="review-item-row"><span class="review-item-label">Est. weekly clicks</span><span class="review-item-val" id="review-forecast">~740 clicks (~$350.00 weekly cost)</span></div>
+                  <div class="review-item-row"><span class="review-item-label">Daily budget</span><strong class="review-item-val" id="review-budget">Rs. 500.00 / day</strong></div>
+                  <div class="review-item-row"><span class="review-item-label">Est. weekly clicks</span><span class="review-item-val" id="review-forecast">~740 clicks (~Rs. 3,500.00 weekly cost)</span></div>
                 </div>
               </div>
 

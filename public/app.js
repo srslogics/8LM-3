@@ -1073,7 +1073,7 @@ async function loadWorkspaceCampaigns(wsId) {
 
   const activeCount = imported.filter(c => c.status === 'ENABLED').length;
   if ($('kpi-active-count')) $('kpi-active-count').textContent = activeCount;
-  if ($('kpi-total-budget')) $('kpi-total-budget').textContent = '$' + totalDaily.toFixed(2) + '/day';
+  if ($('kpi-total-budget')) $('kpi-total-budget').textContent = 'Rs. ' + totalDaily.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '/day';
   if ($('kpi-impressions')) $('kpi-impressions').textContent = (imported.length * 18450).toLocaleString();
   if ($('kpi-clicks')) $('kpi-clicks').textContent = (imported.length * 740).toLocaleString();
 
@@ -1120,7 +1120,9 @@ async function loadWorkspaceCampaigns(wsId) {
 
     // Budget
     const tdBudget = document.createElement('td');
-    tdBudget.textContent = c.budget;
+    const rawBudget = c.budget || '';
+    const cleanBudgetText = rawBudget.replace(/^\$/, 'Rs. ');
+    tdBudget.textContent = cleanBudgetText.startsWith('Rs.') ? cleanBudgetText : (cleanBudgetText ? 'Rs. ' + cleanBudgetText : '—');
     tr.appendChild(tdBudget);
 
     // Source
@@ -1187,7 +1189,7 @@ let wizardState = {
   sitelinks: [],
   callouts: [],
   assetPhone: '',
-  budget: '50.00',
+  budget: '500.00',
   status: 'ENABLED',
 };
 
@@ -1209,7 +1211,7 @@ function openCreateCampaignWizard() {
   wizardState.objective = 'Sales';
   wizardState.channel = 'Search';
   wizardState.campaignName = '';
-  wizardState.budget = '50.00';
+  wizardState.budget = '500.00';
   wizardState.targetLocation = 'India';
   wizardState.status = 'ENABLED';
   wizardState.websiteUrl = '';
@@ -1228,7 +1230,7 @@ function openCreateCampaignWizard() {
   if ($('wizard-campaign-name')) $('wizard-campaign-name').value = '';
   if ($('wizard-website-url')) $('wizard-website-url').value = '';
   if ($('wizard-phone-number')) $('wizard-phone-number').value = '';
-  if ($('wizard-budget-input')) $('wizard-budget-input').value = '50.00';
+  if ($('wizard-budget-input')) $('wizard-budget-input').value = '500.00';
   if ($('wizard-bidding-focus')) $('wizard-bidding-focus').value = 'Maximise conversions';
   if ($('wizard-status-select')) $('wizard-status-select').value = 'ENABLED';
   if ($('wizard-set-cpa')) $('wizard-set-cpa').checked = false;
@@ -1327,7 +1329,7 @@ function renderWizardStep(stepNum) {
   if ($('wizard-nav-sub-5')) $('wizard-nav-sub-5').textContent = wizardState.targetLocation || 'India';
   if ($('wizard-nav-sub-8')) {
     const bVal = $('wizard-budget-input') ? $('wizard-budget-input').value.trim() : wizardState.budget;
-    $('wizard-nav-sub-8').textContent = `$${bVal || '50'}/day`;
+    $('wizard-nav-sub-8').textContent = `Rs. ${bVal || '500.00'}/day`;
   }
 
   // Show only active step pane
@@ -1463,15 +1465,15 @@ function updateRsaLivePreview() {
 }
 
 function updateBudgetForecast(budgetNum) {
-  const b = parseFloat(budgetNum) || 50;
-  const clicks = Math.round(b * 14.8);
+  const b = parseFloat(budgetNum) || 500;
   const spend = Math.round(b * 7);
-  const cpc = (spend / Math.max(clicks, 1)).toFixed(2);
+  const cpc = 4.70;
+  const clicks = Math.round(spend / cpc);
 
   if ($('forecast-clicks')) $('forecast-clicks').textContent = `~${clicks.toLocaleString()}`;
-  if ($('forecast-cpc')) $('forecast-cpc').textContent = `~$${cpc}`;
-  if ($('forecast-spend')) $('forecast-spend').textContent = `~$${spend.toFixed(2)}`;
-  if ($('review-forecast')) $('review-forecast').textContent = `~${clicks.toLocaleString()} clicks (~$${spend.toFixed(2)} weekly cost)`;
+  if ($('forecast-cpc')) $('forecast-cpc').textContent = `~Rs. ${cpc.toFixed(2)}`;
+  if ($('forecast-spend')) $('forecast-spend').textContent = `~Rs. ${spend.toLocaleString('en-IN')}.00`;
+  if ($('review-forecast')) $('review-forecast').textContent = `~${clicks.toLocaleString()} clicks (~Rs. ${spend.toLocaleString('en-IN')}.00 weekly cost)`;
 }
 
 function populateWizardReview() {
@@ -1484,7 +1486,7 @@ function populateWizardReview() {
   if ($('review-type')) $('review-type').textContent = wizardState.channel;
   if ($('review-bidding')) $('review-bidding').textContent = biddingVal;
   if ($('review-location')) $('review-location').textContent = wizardState.targetLocation || 'India';
-  if ($('review-budget')) $('review-budget').textContent = `$${parseFloat(budgetVal || 50).toFixed(2)} / day`;
+  if ($('review-budget')) $('review-budget').textContent = `Rs. ${parseFloat(budgetVal || 500).toFixed(2)} / day`;
 
   const networks = [];
   if ($('wizard-network-search') && $('wizard-network-search').checked) networks.push('Google Search Network (with partners)');
@@ -1494,7 +1496,7 @@ function populateWizardReview() {
   const kwCount = ($('wizard-keywords-input') && $('wizard-keywords-input').value.trim()) ? $('wizard-keywords-input').value.trim().split('\n').filter(Boolean).length : 0;
   if ($('review-kw-count')) $('review-kw-count').textContent = `${kwCount} keywords configured`;
 
-  updateBudgetForecast(parseFloat(budgetVal || 50));
+  updateBudgetForecast(parseFloat(budgetVal || 500));
 }
 
 let wizardInitialized = false;
@@ -1536,7 +1538,7 @@ function initCampaignWizard() {
       card.onclick = () => {
         document.querySelectorAll('#budget-tiers-container .budget-tier-card').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
-        const b = card.getAttribute('data-budget') || '50.00';
+        const b = card.getAttribute('data-budget') || '500.00';
         wizardState.budget = b;
         if ($('wizard-budget-input')) $('wizard-budget-input').value = b;
         updateBudgetForecast(b);
@@ -1859,7 +1861,7 @@ async function submitWizardCampaign() {
     const res = await workspaceRequest('/' + activeWs + '/campaigns/create', 'POST', {
       name,
       channel: wizardState.channel || 'Search',
-      budget: budgetVal ? `$${parseFloat(budgetVal).toFixed(2)}/day` : '$50.00/day',
+      budget: budgetVal ? `Rs. ${parseFloat(budgetVal).toFixed(2)}/day` : 'Rs. 500.00/day',
       status,
       bidding_strategy: biddingStrategy,
       target_location: targetLocation,

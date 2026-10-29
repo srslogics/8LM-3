@@ -521,10 +521,10 @@ export function workspaceRoutes(app, db, session) {
     if (!name || name.trim().length < 2)
       return res.status(400).json({ error: "Campaign name is required (minimum 2 characters)." });
 
-    let cleanBudget = "$50.00/day";
+    let cleanBudget = "Rs. 500.00/day";
     if (budget) {
       const num = parseFloat(String(budget).replace(/[^0-9.]/g, ""));
-      if (!isNaN(num) && num > 0) cleanBudget = `$${num.toFixed(2)}/day`;
+      if (!isNaN(num) && num > 0) cleanBudget = `Rs. ${num.toFixed(2)}/day`;
     }
 
     const cleanStatus = (status || "ENABLED").toUpperCase() === "PAUSED" ? "PAUSED" : "ENABLED";
