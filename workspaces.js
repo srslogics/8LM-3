@@ -58,6 +58,12 @@ export function workspaceRoutes(app, db, session) {
       ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS phone_number TEXT DEFAULT '';
       ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS optimize_new_customers BOOLEAN DEFAULT false;
       ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS reengage_lapsed_customers BOOLEAN DEFAULT false;
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS keywords TEXT DEFAULT '';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS headlines TEXT DEFAULT '';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS descriptions TEXT DEFAULT '';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS sitelinks TEXT DEFAULT '';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS callouts TEXT DEFAULT '';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS networks TEXT DEFAULT 'Search Network';
       CREATE TABLE IF NOT EXISTS eightlm.oauth_tokens (
         workspace_id BIGINT PRIMARY KEY REFERENCES eightlm.workspaces(id) ON DELETE CASCADE,
         provider TEXT NOT NULL DEFAULT 'google',
@@ -504,6 +510,12 @@ export function workspaceRoutes(app, db, session) {
       phone_number,
       optimize_new_customers,
       reengage_lapsed_customers,
+      keywords,
+      headlines,
+      descriptions,
+      sitelinks,
+      callouts,
+      networks,
     } = req.body;
 
     if (!name || name.trim().length < 2)
@@ -530,14 +542,16 @@ export function workspaceRoutes(app, db, session) {
       `INSERT INTO eightlm.campaigns(
          id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at, created_by,
          bidding_strategy, target_location, objective, conversion_goals, ways_to_reach,
-         website_url, phone_number, optimize_new_customers, reengage_lapsed_customers
+         website_url, phone_number, optimize_new_customers, reengage_lapsed_customers,
+         keywords, headlines, descriptions, sitelinks, callouts, networks
        )
-       VALUES($1, $2, $3, $4, $5, $6, $7, true, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+       VALUES($1, $2, $3, $4, $5, $6, $7, true, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`,
       campaignId, req.params.id, customerId, name.trim(), cleanChannel, cleanStatus, cleanBudget, now, ctx.user.id,
       bidding_strategy || "Maximise conversions", target_location || "Global / All Countries",
       objective || "Sales", conversion_goals || "Purchases, Phone call leads",
       ways_to_reach || "Website visits", website_url || "", phone_number || "",
       Boolean(optimize_new_customers), Boolean(reengage_lapsed_customers),
+      keywords || "", headlines || "", descriptions || "", sitelinks || "", callouts || "", networks || "Search Network",
     );
 
     await db.run(

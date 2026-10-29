@@ -295,6 +295,98 @@ details.role-guide p { margin-top: 10px; color: var(--gcp-text-2); line-height: 
 .wizard-option-title { font-size: 14px; font-weight: 600; color: var(--gcp-text); }
 .wizard-option-desc { font-size: 12px; color: var(--gcp-text-2); line-height: 1.45; }
 .wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--gcp-border); }
+
+/* ── Google Search Ad Preview & Ad Strength ──────── */
+.ad-builder-split { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 24px; align-items: flex-start; }
+@media (max-width: 992px) {
+  .ad-builder-split { grid-template-columns: 1fr; }
+}
+
+.ad-strength-card {
+  background: var(--gcp-surface);
+  border: 1px solid var(--gcp-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.ad-strength-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.ad-strength-status { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.ad-strength-bars { display: flex; gap: 4px; }
+.ad-strength-bar { width: 32px; height: 6px; border-radius: 3px; background: #e0e0e0; transition: background .2s; }
+.ad-strength-bar.bar-poor { background: #ea4335; }
+.ad-strength-bar.bar-avg { background: #fbbc04; }
+.ad-strength-bar.bar-good { background: #34a853; }
+.ad-strength-bar.bar-exc { background: #1a73e8; }
+
+.ad-strength-checklist { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--gcp-text-2); }
+.ad-strength-check-item { display: flex; align-items: center; gap: 8px; }
+.ad-strength-check-icon { width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; background: #dadce0; color: #fff; }
+.ad-strength-check-item.done .ad-strength-check-icon { background: #1e8e3e; }
+.ad-strength-check-item.done { color: var(--gcp-text); }
+
+.ad-preview-container {
+  background: #f8f9fa;
+  border: 1px solid var(--gcp-border);
+  border-radius: 8px;
+  padding: 20px;
+  position: sticky;
+  top: 80px;
+}
+.ad-preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.ad-preview-device-toggle { display: flex; gap: 4px; background: #e8eaed; border-radius: 6px; padding: 2px; }
+.ad-preview-device-btn { border: none; background: transparent; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; color: var(--gcp-text-2); display: flex; align-items: center; gap: 4px; }
+.ad-preview-device-btn.active { background: #fff; color: var(--gcp-text); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+.google-search-mock {
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-family: Arial, Roboto, sans-serif;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.mock-ad-meta { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 4px; color: #202124; }
+.mock-ad-badge { font-weight: 700; color: #202124; font-size: 11px; }
+.mock-ad-url { color: #202124; font-size: 12px; word-break: break-all; }
+.mock-ad-headline {
+  font-size: 18px;
+  line-height: 1.3;
+  color: #1a0dab;
+  font-weight: 400;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.mock-ad-headline:hover { text-decoration: underline; }
+.mock-ad-desc { font-size: 13px; line-height: 1.45; color: #4d5156; margin-bottom: 10px; }
+.mock-ad-sitelinks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 10px; border-top: 1px solid #e8eaed; }
+.mock-sitelink-title { font-size: 13px; color: #1a0dab; font-weight: 500; cursor: pointer; }
+.mock-sitelink-title:hover { text-decoration: underline; }
+.mock-sitelink-desc { font-size: 11px; color: #70757a; }
+
+.char-field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.char-input-wrap { flex: 1; position: relative; }
+.char-counter { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--gcp-text-3); pointer-events: none; }
+.char-pin-btn { width: 34px; height: 34px; border: 1px solid var(--gcp-border); border-radius: 4px; background: var(--gcp-surface); color: var(--gcp-text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+.char-pin-btn:hover, .char-pin-btn.pinned { border-color: var(--gcp-blue); color: var(--gcp-blue); background: rgba(66,133,244,0.06); }
+
+/* ── Budget Forecast Tiers ────────────────────────── */
+.budget-tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.budget-tier-card { border: 1.5px solid var(--gcp-border); border-radius: 8px; padding: 18px; cursor: pointer; transition: all .15s; background: var(--gcp-surface); position: relative; }
+.budget-tier-card:hover { border-color: #b3d1ff; }
+.budget-tier-card.selected { border-color: var(--gcp-blue); border-width: 2px; background: rgba(66,133,244,0.04); }
+.budget-tier-badge { position: absolute; top: -10px; right: 12px; background: var(--gcp-blue); color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; }
+.budget-tier-amount { font-size: 22px; font-weight: 600; color: var(--gcp-text); margin-bottom: 6px; }
+.budget-tier-forecast { font-size: 12px; color: var(--gcp-text-2); line-height: 1.5; border-top: 1px solid var(--gcp-border); padding-top: 8px; margin-top: 8px; }
+
+/* ── Review Accordion ────────────────────────────── */
+.review-section-box { border: 1px solid var(--gcp-border); border-radius: 8px; overflow: hidden; margin-bottom: 14px; background: var(--gcp-surface); }
+.review-section-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--gcp-bg); border-bottom: 1px solid var(--gcp-border); font-weight: 600; font-size: 14px; }
+.review-section-body { padding: 16px 18px; }
+.review-item-row { display: grid; grid-template-columns: 160px 1fr; gap: 12px; font-size: 13px; padding: 6px 0; }
+.review-item-label { color: var(--gcp-text-3); }
+.review-item-val { color: var(--gcp-text); font-weight: 500; }
+.review-checklist-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #1e8e3e; font-weight: 600; }
 @media (max-width: 900px) {
   .wizard-container { flex-direction: column; }
   .wizard-sidebar { width: 100%; position: static; }

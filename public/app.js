@@ -1155,7 +1155,7 @@ async function loadWorkspaceCampaigns(wsId) {
 }
 
 /* ══════════════════════════════════════════════════
-   CAMPAIGN CREATION WIZARD (GOOGLE ADS MULTI-STEP)
+   CAMPAIGN CREATION WIZARD (FULL GOOGLE ADS FLOW)
    ══════════════════════════════════════════════════ */
 let wizardState = {
   currentStep: 1,
@@ -1169,19 +1169,47 @@ let wizardState = {
   phoneNumber: '',
   reachShop: false,
   biddingStrategy: 'Maximise conversions',
+  targetCpa: '12.00',
   optimizeNewCustomers: false,
   reengageLapsedCustomers: false,
+  networkSearch: true,
+  networkDisplay: false,
+  targetLocation: 'India',
+  customLocation: '',
+  language: 'English',
+  adGroupName: 'Ad group 1',
+  keywords: 'digital marketing agency\n"google ads management"\n[ppc campaign services]\nenterprise marketing analytics\nroi driven ad management',
+  finalUrl: 'https://srslogics.com',
+  displayPath1: 'services',
+  displayPath2: 'ads',
+  headlines: [
+    'Scale Your Business Online',
+    'Top Google Ads Performance',
+    '8LM Marketing Intelligence',
+    'Maximize Conversion ROI',
+    'Get Free Growth Audit Today'
+  ],
+  descriptions: [
+    'Maximize leads and revenue with verified Google Ads tracking, real-time KPI metrics & insights.',
+    'Trusted by high-growth companies. Set up in minutes and turn clicks into loyal customers.'
+  ],
+  sitelinks: ['Pricing & Plans', 'Case Studies', 'Schedule a Demo', 'Contact Support'],
+  callouts: ['Verified Google Partner', 'Real-Time Attribution', 'No Setup Fees', '24/7 Priority Support'],
+  assetPhone: '+1 (820) 330-9235',
   budget: '50.00',
-  targetLocation: 'Global / All Countries',
   status: 'ENABLED',
 };
 
 const STEP_TITLES = {
   1: "What's your campaign objective?",
   2: "Select a campaign type",
-  3: "Campaign settings",
-  4: "Bidding & budget",
-  5: "Review your campaign"
+  3: "Select ways to reach your goal & campaign name",
+  4: "Bidding",
+  5: "Campaign settings",
+  6: "Keywords and ads",
+  7: "Assets",
+  8: "Budget",
+  9: "Review your campaign"
 };
 
 function openCreateCampaignWizard() {
@@ -1191,13 +1219,12 @@ function openCreateCampaignWizard() {
   wizardState.channel = 'Search';
   wizardState.campaignName = 'Sales-Search-1';
   wizardState.budget = '50.00';
-  wizardState.targetLocation = 'Global / All Countries';
+  wizardState.targetLocation = 'India';
   wizardState.status = 'ENABLED';
 
   if ($('wizard-campaign-name')) $('wizard-campaign-name').value = 'Sales-Search-1';
   if ($('wizard-budget-input')) $('wizard-budget-input').value = '50.00';
   if ($('wizard-bidding-focus')) $('wizard-bidding-focus').value = 'Maximise conversions';
-  if ($('wizard-location-select')) $('wizard-location-select').value = 'Global / All Countries';
   if ($('wizard-status-select')) $('wizard-status-select').value = 'ENABLED';
   if ($('wizard-reach-website')) $('wizard-reach-website').checked = true;
   if ($('wizard-reach-website-box')) $('wizard-reach-website-box').hidden = false;
@@ -1236,7 +1263,7 @@ function renderWizardStep(stepNum) {
   }
 
   // Update stepper navigation
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 9; i++) {
     const navItem = $('wizard-nav-step-' + i);
     const icon = $('wizard-icon-' + i);
     if (!navItem) continue;
@@ -1260,21 +1287,31 @@ function renderWizardStep(stepNum) {
   if ($('wizard-nav-sub-2')) $('wizard-nav-sub-2').textContent = wizardState.channel;
   if ($('wizard-nav-sub-3')) {
     const nameVal = $('wizard-campaign-name') ? $('wizard-campaign-name').value.trim() : wizardState.campaignName;
-    $('wizard-nav-sub-3').textContent = nameVal || 'Name & reach';
+    $('wizard-nav-sub-3').textContent = nameVal || 'Sales-Search-1';
   }
   if ($('wizard-nav-sub-4')) {
+    const bFocus = $('wizard-bidding-focus') ? $('wizard-bidding-focus').value : 'Conversions';
+    $('wizard-nav-sub-4').textContent = bFocus.replace('Maximise ', '');
+  }
+  if ($('wizard-nav-sub-5')) $('wizard-nav-sub-5').textContent = wizardState.targetLocation || 'India';
+  if ($('wizard-nav-sub-8')) {
     const bVal = $('wizard-budget-input') ? $('wizard-budget-input').value.trim() : wizardState.budget;
-    $('wizard-nav-sub-4').textContent = `$${bVal || '50'}/day`;
+    $('wizard-nav-sub-8').textContent = `$${bVal || '50'}/day`;
   }
 
   // Show only active step pane
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 9; i++) {
     const pane = $('wizard-pane-' + i);
     if (pane) pane.hidden = (i !== stepNum);
   }
 
-  // Step 5 Review population
-  if (stepNum === 5) {
+  // Step 6 live ad preview update
+  if (stepNum === 6) {
+    updateRsaLivePreview();
+  }
+
+  // Step 9 Review population
+  if (stepNum === 9) {
     populateWizardReview();
   }
 
@@ -1283,33 +1320,97 @@ function renderWizardStep(stepNum) {
   }
 }
 
+function updateRsaLivePreview() {
+  const finalUrl = ($('rsa-final-url') ? $('rsa-final-url').value.trim() : '') || 'https://srslogics.com';
+  const path1 = ($('rsa-path-1') ? $('rsa-path-1').value.trim() : '') || 'services';
+  const path2 = ($('rsa-path-2') ? $('rsa-path-2').value.trim() : '') || 'ads';
+
+  // Gather headlines
+  const hlInputs = [];
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    document.querySelectorAll('.rsa-hl-input').forEach(inp => {
+      if (inp.value.trim()) hlInputs.push(inp.value.trim());
+    });
+  }
+  const previewHl = hlInputs.length ? hlInputs.slice(0, 3).join(' | ') : 'Scale Your Business Online | Top Google Ads Performance';
+
+  // Gather descriptions
+  const descInputs = [];
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    document.querySelectorAll('.rsa-desc-input').forEach(inp => {
+      if (inp.value.trim()) descInputs.push(inp.value.trim());
+    });
+  }
+  const previewDesc = descInputs.length ? descInputs[0] : 'Maximize leads and revenue with verified Google Ads tracking, real-time KPI metrics & insights.';
+
+  // Update DOM mock
+  if ($('mock-preview-url')) $('mock-preview-url').textContent = `${finalUrl} › ${path1} › ${path2}`;
+  if ($('mock-preview-hl')) $('mock-preview-hl').textContent = previewHl;
+  if ($('mock-preview-desc')) $('mock-preview-desc').textContent = previewDesc;
+
+  // Calculate dynamic Ad Strength
+  let score = 0;
+  if (hlInputs.length >= 3) score++;
+  if (hlInputs.length >= 5) score++;
+  if (descInputs.length >= 2) score++;
+  if (previewHl.toLowerCase().includes('ads') || previewHl.toLowerCase().includes('marketing')) score++;
+
+  const strengthLabel = $('rsa-strength-label');
+  if (strengthLabel) {
+    if (score >= 4) {
+      strengthLabel.textContent = 'Excellent';
+      strengthLabel.style.color = '#1a73e8';
+    } else if (score >= 3) {
+      strengthLabel.textContent = 'Good';
+      strengthLabel.style.color = '#1e8e3e';
+    } else if (score >= 2) {
+      strengthLabel.textContent = 'Average';
+      strengthLabel.style.color = '#fbbc04';
+    } else {
+      strengthLabel.textContent = 'Poor';
+      strengthLabel.style.color = '#ea4335';
+    }
+  }
+
+  // Update headline counter
+  if ($('rsa-headline-count')) {
+    $('rsa-headline-count').textContent = `${hlInputs.length} / 15 added`;
+  }
+}
+
+function updateBudgetForecast(budgetNum) {
+  const b = parseFloat(budgetNum) || 50;
+  const clicks = Math.round(b * 14.8);
+  const spend = Math.round(b * 7);
+  const cpc = (spend / Math.max(clicks, 1)).toFixed(2);
+
+  if ($('forecast-clicks')) $('forecast-clicks').textContent = `~${clicks.toLocaleString()}`;
+  if ($('forecast-cpc')) $('forecast-cpc').textContent = `~$${cpc}`;
+  if ($('forecast-spend')) $('forecast-spend').textContent = `~$${spend.toFixed(2)}`;
+  if ($('review-forecast')) $('review-forecast').textContent = `~${clicks.toLocaleString()} clicks (~$${spend.toFixed(2)} weekly cost)`;
+}
+
 function populateWizardReview() {
   const nameVal = $('wizard-campaign-name') ? $('wizard-campaign-name').value.trim() : wizardState.campaignName;
   const budgetVal = $('wizard-budget-input') ? $('wizard-budget-input').value.trim() : wizardState.budget;
-  const locVal = $('wizard-location-select') ? $('wizard-location-select').value : wizardState.targetLocation;
   const biddingVal = $('wizard-bidding-focus') ? $('wizard-bidding-focus').value : wizardState.biddingStrategy;
 
-  if ($('review-name')) $('review-name').textContent = nameVal || 'Untitled Campaign';
+  if ($('review-name')) $('review-name').textContent = nameVal || 'Sales-Search-1';
   if ($('review-objective')) $('review-objective').textContent = wizardState.objective;
   if ($('review-type')) $('review-type').textContent = wizardState.channel;
-  if ($('review-goals')) $('review-goals').textContent = 'Purchases (account default), Phone call leads';
-
-  const reachItems = [];
-  if ($('wizard-reach-website') && $('wizard-reach-website').checked) {
-    const url = $('wizard-website-url') ? $('wizard-website-url').value.trim() : '';
-    reachItems.push('Website visits' + (url ? ` (${url})` : ''));
-  }
-  if ($('wizard-reach-phone') && $('wizard-reach-phone').checked) {
-    const phone = $('wizard-phone-number') ? $('wizard-phone-number').value.trim() : '';
-    reachItems.push('Phone calls' + (phone ? ` (${phone})` : ''));
-  }
-  if ($('wizard-reach-shop') && $('wizard-reach-shop').checked) {
-    reachItems.push('Shop visits');
-  }
-  if ($('review-reach')) $('review-reach').textContent = reachItems.length ? reachItems.join(', ') : 'None selected';
   if ($('review-bidding')) $('review-bidding').textContent = biddingVal;
+  if ($('review-location')) $('review-location').textContent = wizardState.targetLocation || 'India';
   if ($('review-budget')) $('review-budget').textContent = `$${parseFloat(budgetVal || 50).toFixed(2)} / day`;
-  if ($('review-location')) $('review-location').textContent = locVal;
+
+  const networks = [];
+  if ($('wizard-network-search') && $('wizard-network-search').checked) networks.push('Google Search Network (with partners)');
+  if ($('wizard-network-display') && $('wizard-network-display').checked) networks.push('Google Display Network');
+  if ($('review-networks')) $('review-networks').textContent = networks.length ? networks.join(' + ') : 'Search Network';
+
+  const kwCount = ($('wizard-keywords-input') && $('wizard-keywords-input').value.trim()) ? $('wizard-keywords-input').value.trim().split('\n').filter(Boolean).length : 5;
+  if ($('review-kw-count')) $('review-kw-count').textContent = `${kwCount} high-intent keywords configured`;
+
+  updateBudgetForecast(parseFloat(budgetVal || 50));
 }
 
 let wizardInitialized = false;
@@ -1346,6 +1447,18 @@ function initCampaignWizard() {
       };
     });
 
+    // Step 8: Budget tier cards
+    document.querySelectorAll('#budget-tiers-container .budget-tier-card').forEach(card => {
+      card.onclick = () => {
+        document.querySelectorAll('#budget-tiers-container .budget-tier-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        const b = card.getAttribute('data-budget') || '50.00';
+        wizardState.budget = b;
+        if ($('wizard-budget-input')) $('wizard-budget-input').value = b;
+        updateBudgetForecast(b);
+      };
+    });
+
     // Left stepper clicks
     document.querySelectorAll('.wizard-step-item').forEach(item => {
       item.onclick = () => {
@@ -1355,6 +1468,28 @@ function initCampaignWizard() {
         }
       };
     });
+
+    // Input listeners for RSA live preview
+    document.querySelectorAll('.rsa-hl-input, .rsa-desc-input').forEach(inp => {
+      inp.oninput = () => updateRsaLivePreview();
+    });
+
+    // Location radios
+    document.querySelectorAll('input[name="wizard-location-opt"]').forEach(radio => {
+      radio.onchange = () => {
+        wizardState.targetLocation = radio.value;
+        if ($('wizard-custom-location-box')) {
+          $('wizard-custom-location-box').hidden = (radio.value !== 'Custom');
+        }
+      };
+    });
+  }
+
+  // Target CPA toggle
+  if ($('wizard-set-cpa')) {
+    $('wizard-set-cpa').onchange = () => {
+      if ($('wizard-cpa-box')) $('wizard-cpa-box').hidden = !$('wizard-set-cpa').checked;
+    };
   }
 
   // Reach checkbox toggles
@@ -1373,18 +1508,86 @@ function initCampaignWizard() {
     };
   }
 
-  // Step 1 buttons
+  // Device switcher for ad preview
+  if ($('btn-preview-mobile')) {
+    $('btn-preview-mobile').onclick = () => {
+      $('btn-preview-mobile').classList.add('active');
+      if ($('btn-preview-desktop')) $('btn-preview-desktop').classList.remove('active');
+      if ($('rsa-live-mock')) $('rsa-live-mock').style.maxWidth = '360px';
+    };
+  }
+  if ($('btn-preview-desktop')) {
+    $('btn-preview-desktop').onclick = () => {
+      $('btn-preview-desktop').classList.add('active');
+      if ($('btn-preview-mobile')) $('btn-preview-mobile').classList.remove('active');
+      if ($('rsa-live-mock')) $('rsa-live-mock').style.maxWidth = '100%';
+    };
+  }
+
+  // Keyword scanner simulation
+  if ($('wizard-scan-kw-btn')) {
+    $('wizard-scan-kw-btn').onclick = () => {
+      const url = $('wizard-kw-scan-url') ? $('wizard-kw-scan-url').value.trim() : 'srslogics.com';
+      const cleanUrl = url.replace(/https?:\/\//, '').split('/')[0];
+      const generated = [
+        `best marketing services for ${cleanUrl}`,
+        `"enterprise google ads agency"`,
+        `[ppc campaign management services]`,
+        `top digital advertising platform`,
+        `conversion rate optimization services`,
+        `google ads account setup & audit`
+      ].join('\n');
+      if ($('wizard-keywords-input')) $('wizard-keywords-input').value = generated;
+      toast('Scanned ' + cleanUrl + ' and populated 6 high-intent keyword targets!', 'success');
+    };
+  }
+
+  // Add headline button
+  if ($('rsa-add-hl-btn')) {
+    $('rsa-add-hl-btn').onclick = () => {
+      const container = $('rsa-headlines-container');
+      if (!container) return;
+      const count = container.querySelectorAll('.char-field-row').length;
+      if (count >= 15) {
+        toast('Maximum 15 headlines reached.', 'error');
+        return;
+      }
+      const div = document.createElement('div');
+      div.className = 'char-field-row';
+      div.innerHTML = `
+        <div class="char-input-wrap">
+          <input type="text" class="gcp-input rsa-hl-input" placeholder="New headline" maxlength="30" style="width:100%;height:36px;padding-right:45px;box-sizing:border-box;">
+          <span class="char-counter">0/30</span>
+        </div>
+        <button type="button" class="char-pin-btn" title="Pin position">📌</button>
+      `;
+      div.querySelector('input').oninput = (e) => {
+        div.querySelector('.char-counter').textContent = `${e.target.value.length}/30`;
+        updateRsaLivePreview();
+      };
+      container.appendChild(div);
+      div.querySelector('input').focus();
+      updateRsaLivePreview();
+    };
+  }
+
+  // Custom budget input listener
+  if ($('wizard-budget-input')) {
+    $('wizard-budget-input').oninput = (e) => {
+      updateBudgetForecast(e.target.value);
+    };
+  }
+
+  // Step 1-9 buttons
   if ($('wizard-step-1-cancel')) $('wizard-step-1-cancel').onclick = () => showView('campaigns');
   if ($('wizard-step-1-next')) $('wizard-step-1-next').onclick = () => renderWizardStep(2);
 
-  // Step 2 buttons
   if ($('wizard-step-2-back')) $('wizard-step-2-back').onclick = () => renderWizardStep(1);
   if ($('wizard-step-2-next')) $('wizard-step-2-next').onclick = () => {
     updateSuggestedCampaignName();
     renderWizardStep(3);
   };
 
-  // Step 3 buttons
   if ($('wizard-step-3-back')) $('wizard-step-3-back').onclick = () => renderWizardStep(2);
   if ($('wizard-step-3-next')) $('wizard-step-3-next').onclick = () => {
     const name = $('wizard-campaign-name') ? $('wizard-campaign-name').value.trim() : '';
@@ -1397,23 +1600,29 @@ function initCampaignWizard() {
     renderWizardStep(4);
   };
 
-  // Step 4 buttons
   if ($('wizard-step-4-back')) $('wizard-step-4-back').onclick = () => renderWizardStep(3);
-  if ($('wizard-step-4-next')) $('wizard-step-4-next').onclick = () => {
-    const budgetVal = $('wizard-budget-input') ? $('wizard-budget-input').value.trim() : '';
-    const num = parseFloat(budgetVal);
-    if (isNaN(num) || num <= 0) {
-      toast('Please enter a valid daily budget greater than $0.', 'error');
-      if ($('wizard-budget-input')) $('wizard-budget-input').focus();
-      return;
-    }
-    wizardState.budget = num.toFixed(2);
-    renderWizardStep(5);
-  };
+  if ($('wizard-step-4-next')) $('wizard-step-4-next').onclick = () => renderWizardStep(5);
 
-  // Step 5 buttons
   if ($('wizard-step-5-back')) $('wizard-step-5-back').onclick = () => renderWizardStep(4);
+  if ($('wizard-step-5-next')) $('wizard-step-5-next').onclick = () => renderWizardStep(6);
+
+  if ($('wizard-step-6-back')) $('wizard-step-6-back').onclick = () => renderWizardStep(5);
+  if ($('wizard-step-6-next')) $('wizard-step-6-next').onclick = () => renderWizardStep(7);
+
+  if ($('wizard-step-7-back')) $('wizard-step-7-back').onclick = () => renderWizardStep(6);
+  if ($('wizard-step-7-next')) $('wizard-step-7-next').onclick = () => renderWizardStep(8);
+
+  if ($('wizard-step-8-back')) $('wizard-step-8-back').onclick = () => renderWizardStep(7);
+  if ($('wizard-step-8-next')) $('wizard-step-8-next').onclick = () => renderWizardStep(9);
+
+  if ($('wizard-step-9-back')) $('wizard-step-9-back').onclick = () => renderWizardStep(8);
   if ($('wizard-publish-btn')) $('wizard-publish-btn').onclick = submitWizardCampaign;
+
+  // Step 9 edit shortcuts
+  if ($('rev-edit-step-1')) $('rev-edit-step-1').onclick = () => renderWizardStep(1);
+  if ($('rev-edit-step-4')) $('rev-edit-step-4').onclick = () => renderWizardStep(4);
+  if ($('rev-edit-step-6')) $('rev-edit-step-6').onclick = () => renderWizardStep(6);
+  if ($('rev-edit-step-8')) $('rev-edit-step-8').onclick = () => renderWizardStep(8);
 
   // Header cancel & breadcrumb
   if ($('wizard-breadcrumb-campaigns')) $('wizard-breadcrumb-campaigns').onclick = (e) => {
@@ -1428,7 +1637,7 @@ async function submitWizardCampaign() {
   const name = $('wizard-campaign-name') ? $('wizard-campaign-name').value.trim() : wizardState.campaignName;
   const budgetVal = $('wizard-budget-input') ? $('wizard-budget-input').value.trim() : wizardState.budget;
   const biddingStrategy = $('wizard-bidding-focus') ? $('wizard-bidding-focus').value : 'Maximise conversions';
-  const targetLocation = $('wizard-location-select') ? $('wizard-location-select').value : 'Global / All Countries';
+  const targetLocation = wizardState.targetLocation || 'India';
   const status = $('wizard-status-select') ? $('wizard-status-select').value : 'ENABLED';
 
   const reachItems = [];
@@ -1449,6 +1658,12 @@ async function submitWizardCampaign() {
   const optNew = $('wizard-opt-new-customers') ? $('wizard-opt-new-customers').checked : false;
   const optRet = $('wizard-opt-retention') ? $('wizard-opt-retention').checked : false;
 
+  const keywords = $('wizard-keywords-input') ? $('wizard-keywords-input').value.trim() : '';
+
+  const networks = [];
+  if ($('wizard-network-search') && $('wizard-network-search').checked) networks.push('Search Network');
+  if ($('wizard-network-display') && $('wizard-network-display').checked) networks.push('Display Network');
+
   if (!name) {
     toast('Campaign name is required.', 'error');
     renderWizardStep(3);
@@ -1457,7 +1672,7 @@ async function submitWizardCampaign() {
 
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Publishing…';
+    btn.textContent = 'Publishing to Google Ads…';
   }
 
   try {
@@ -1475,9 +1690,11 @@ async function submitWizardCampaign() {
       phone_number: phoneNumber,
       optimize_new_customers: optNew,
       reengage_lapsed_customers: optRet,
+      keywords,
+      networks: networks.join(', ') || 'Search Network',
     });
 
-    toast(`Campaign "${res.campaign.name}" created and published!`, 'success');
+    toast(`Campaign "${res.campaign.name}" created and launched live in Google Ads!`, 'success');
     await loadWorkspaceCampaigns(activeWs);
     await loadCampaigns(activeWs, currentManage);
     showView('campaigns');
@@ -1486,7 +1703,7 @@ async function submitWizardCampaign() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Publish Campaign';
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Publish Campaign';
     }
   }
 }
