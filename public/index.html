@@ -289,8 +289,12 @@
             <div class="breadcrumb">8LM Console › Workspace › Campaigns</div>
             <h1 id="campaigns-view-title">Campaigns</h1>
           </div>
-          <div class="page-header-right">
-            <button id="campaigns-manage-sync-btn" class="btn btn-filled" type="button">
+          <div class="page-header-right" style="display:flex;gap:10px;align-items:center;">
+            <button id="create-campaign-open-btn" class="btn btn-filled" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Create Campaign
+            </button>
+            <button id="campaigns-manage-sync-btn" class="btn btn-outline" type="button">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
               Manage Google Ads Sync
             </button>
@@ -325,20 +329,30 @@
               <line x1="12" y1="20" x2="12" y2="4"></line>
               <line x1="6" y1="20" x2="6" y2="14"></line>
             </svg>
-            <h3 style="font-size:18px;font-weight:500;margin-bottom:8px;">No campaigns fetched yet</h3>
-            <p style="color:var(--gcp-text-2);font-size:14px;max-width:440px;margin:0 auto 20px;">
-              Select which campaigns from your connected Google Ads account should be fetched into this workspace.
+            <h3 style="font-size:18px;font-weight:500;margin-bottom:8px;">No campaigns active in this workspace</h3>
+            <p style="color:var(--gcp-text-2);font-size:14px;max-width:440px;margin:0 auto 24px;">
+              Create a new campaign directly in 8LM or select campaigns from your connected Google Ads account.
             </p>
-            <button class="btn btn-filled" id="campaigns-go-fetch-btn" type="button">
-              Select campaigns to fetch →
-            </button>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+              <button class="btn btn-filled" id="empty-create-campaign-btn" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Create new campaign
+              </button>
+              <button class="btn btn-outline" id="campaigns-go-fetch-btn" type="button">
+                Select from Google Ads →
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Active Fetched Campaigns Table -->
         <div class="gcp-card" id="campaigns-table-card">
-          <div class="gcp-card-header">
-            <h2>Fetched Campaigns in 8LM</h2>
+          <div class="gcp-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <h2>Tracked Campaigns in 8LM</h2>
+            <button class="btn btn-filled" id="table-create-campaign-btn" type="button" style="font-size:12px;padding:6px 14px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Create Campaign
+            </button>
           </div>
           <div class="gcp-card-body no-pad">
             <table class="data-table">
@@ -346,10 +360,10 @@
                 <tr>
                   <th>Campaign name</th>
                   <th>Channel</th>
-                  <th>Google Ads status</th>
+                  <th>Status</th>
                   <th>Daily budget</th>
                   <th>Source</th>
-                  <th>8LM Status</th>
+                  <th style="width:110px;text-align:right;">Actions</th>
                 </tr>
               </thead>
               <tbody id="workspace-campaigns-body">
@@ -664,6 +678,124 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ===================== CREATE CAMPAIGN MODAL ===================== -->
+<div id="create-campaign-modal" class="modal-backdrop" hidden>
+  <div class="gcp-modal" role="dialog" aria-modal="true" style="max-width: 560px;">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <rect width="24" height="24" rx="4" fill="#F8F9FA"/>
+          <path d="M12.5 4.5l-6 10.4a3 3 0 004.1 4.1l6-10.4a3 3 0 00-4.1-4.1z" fill="#FBBC04"/>
+          <path d="M15.5 14.8l-1.5 2.6a3 3 0 01-4.1-4.1l1.5-2.6a3 3 0 014.1 4.1z" fill="#4285F4"/>
+          <circle cx="7" cy="17" r="2.5" fill="#34A853"/>
+        </svg>
+        <h3 style="font-size:16px;font-weight:600;margin:0;">Create Ad Campaign</h3>
+      </div>
+      <button id="create-campaign-close" class="modal-close-btn" type="button" aria-label="Close">&times;</button>
+    </div>
+
+    <!-- Modal Body -->
+    <form id="create-campaign-form" class="modal-body">
+      <p style="color:var(--gcp-text-2);font-size:13px;line-height:1.5;margin-bottom:18px;">
+        Configure and launch a new campaign. Campaigns created here are immediately tracked in this workspace.
+      </p>
+
+      <!-- Campaign Name -->
+      <div class="field" style="margin-bottom:16px;">
+        <label for="new-campaign-name" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Campaign name *</label>
+        <input type="text" id="new-campaign-name" class="gcp-input" placeholder="e.g. Q4 Black Friday — Brand Search" required style="width:100%;box-sizing:border-box;">
+      </div>
+
+      <!-- Channel & Objective Grid -->
+      <div class="field" style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Advertising channel *</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;cursor:pointer;font-size:13px;" class="channel-card">
+            <input type="radio" name="new-campaign-channel" value="Search" checked>
+            <div>
+              <strong>Search</strong>
+              <div style="font-size:11px;color:var(--gcp-text-3);">High-intent keywords</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;cursor:pointer;font-size:13px;" class="channel-card">
+            <input type="radio" name="new-campaign-channel" value="Performance Max">
+            <div>
+              <strong>Performance Max</strong>
+              <div style="font-size:11px;color:var(--gcp-text-3);">AI cross-network</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;cursor:pointer;font-size:13px;" class="channel-card">
+            <input type="radio" name="new-campaign-channel" value="Display">
+            <div>
+              <strong>Display</strong>
+              <div style="font-size:11px;color:var(--gcp-text-3);">Banner network ads</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;cursor:pointer;font-size:13px;" class="channel-card">
+            <input type="radio" name="new-campaign-channel" value="Video">
+            <div>
+              <strong>Video / YouTube</strong>
+              <div style="font-size:11px;color:var(--gcp-text-3);">In-stream &amp; Shorts</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Budget & Status Row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="field">
+          <label for="new-campaign-budget" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Daily budget (USD) *</label>
+          <div style="display:flex;align-items:center;border:1px solid var(--gcp-border);border-radius:4px;overflow:hidden;background:var(--gcp-surface);">
+            <span style="padding:0 10px;color:var(--gcp-text-3);font-size:14px;">$</span>
+            <input type="number" id="new-campaign-budget" min="1" step="0.5" placeholder="50.00" required style="border:none;outline:none;padding:8px 0;width:100%;font-size:14px;background:transparent;">
+            <span style="padding:0 10px;color:var(--gcp-text-3);font-size:12px;">/day</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="new-campaign-status" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Initial status</label>
+          <select id="new-campaign-status" class="gcp-input" style="width:100%;height:38px;box-sizing:border-box;">
+            <option value="ENABLED">Enabled (Live)</option>
+            <option value="PAUSED">Paused (Draft)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Target Location & Bidding Strategy -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="field">
+          <label for="new-campaign-bidding" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Bidding strategy</label>
+          <select id="new-campaign-bidding" class="gcp-input" style="width:100%;height:38px;box-sizing:border-box;">
+            <option value="Maximize Conversions">Maximize Conversions</option>
+            <option value="Maximize Clicks">Maximize Clicks</option>
+            <option value="Target CPA">Target CPA</option>
+            <option value="Target ROAS">Target ROAS</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="new-campaign-location" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Target location</label>
+          <select id="new-campaign-location" class="gcp-input" style="width:100%;height:38px;box-sizing:border-box;">
+            <option value="United States &amp; Canada">United States &amp; Canada</option>
+            <option value="Global / All Countries">Global / All Countries</option>
+            <option value="India">India</option>
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="European Union">European Union</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid var(--gcp-border);">
+        <button id="create-campaign-cancel" class="btn btn-outline" type="button">Cancel</button>
+        <button id="create-campaign-submit" class="btn btn-filled" type="submit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Create Campaign
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 

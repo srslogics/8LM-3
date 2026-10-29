@@ -1093,11 +1093,25 @@ async function loadWorkspaceCampaigns(wsId) {
     tdChannel.appendChild(chip);
     tr.appendChild(tdChannel);
 
-    // Status
+    // Status (Interactive Toggle)
     const tdStatus = document.createElement('td');
-    const stChip = document.createElement('span');
+    const stChip = document.createElement('button');
+    stChip.type = 'button';
     stChip.className = 'campaign-status-chip ' + (c.status === 'ENABLED' ? 'enabled' : 'paused');
+    stChip.style.border = 'none';
+    stChip.style.background = 'transparent';
+    stChip.style.cursor = 'pointer';
+    stChip.style.padding = '0';
+    stChip.title = 'Click to toggle campaign status';
     stChip.textContent = c.status === 'ENABLED' ? 'Enabled' : 'Paused';
+    stChip.onclick = async () => {
+      const next = c.status === 'ENABLED' ? 'PAUSED' : 'ENABLED';
+      try {
+        await workspaceRequest('/' + wsId + '/campaigns/' + c.id + '/status', 'PATCH', { status: next });
+        toast(`Campaign status updated to ${next}`, 'success');
+        await loadWorkspaceCampaigns(wsId);
+      } catch (e) { toast(e.message, 'error'); }
+    };
     tdStatus.appendChild(stChip);
     tr.appendChild(tdStatus);
 
@@ -1108,16 +1122,110 @@ async function loadWorkspaceCampaigns(wsId) {
 
     // Source
     const tdSource = document.createElement('td');
-    tdSource.innerHTML = '<span style="font-size:12px;color:var(--gcp-text-2);display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="6" fill="#FABC04"/><circle cx="8" cy="28" r="5" fill="#EA4335"/><circle cx="32" cy="28" r="5" fill="#3C8BDC"/></svg> Google Ads</span>';
+    tdSource.innerHTML = '<span style="font-size:12px;color:var(--gcp-text-2);display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#F8F9FA"/><path d="M12.5 4.5l-6 10.4a3 3 0 004.1 4.1l6-10.4a3 3 0 00-4.1-4.1z" fill="#FBBC04"/><path d="M15.5 14.8l-1.5 2.6a3 3 0 01-4.1-4.1l1.5-2.6a3 3 0 014.1 4.1z" fill="#4285F4"/><circle cx="7" cy="17" r="2.5" fill="#34A853"/></svg> Google Ads</span>';
     tr.appendChild(tdSource);
 
-    // In 8LM badge
-    const td8LM = document.createElement('td');
-    td8LM.innerHTML = '<span class="imported-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Synced in 8LM</span>';
-    tr.appendChild(td8LM);
+    // Actions
+    const tdActions = document.createElement('td');
+    tdActions.style.textAlign = 'right';
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn btn-outline';
+    delBtn.style.padding = '3px 8px';
+    delBtn.style.fontSize = '11px';
+    delBtn.title = 'Remove campaign from workspace';
+    delBtn.textContent = 'Remove';
+    delBtn.onclick = async () => {
+      if (!confirm(`Remove campaign "${c.name}" from this workspace?`)) return;
+      try {
+        await workspaceRequest('/' + wsId + '/campaigns/' + c.id, 'DELETE');
+        toast('Campaign removed.', 'success');
+        await loadWorkspaceCampaigns(wsId);
+        await loadCampaigns(wsId, currentManage);
+      } catch (e) { toast(e.message, 'error'); }
+    };
+    tdActions.appendChild(delBtn);
+    tr.appendChild(tdActions);
 
     tbody.appendChild(tr);
   });
+}
+
+/* ══════════════════════════════════════════════════
+   CREATE CAMPAIGN MODULE
+   ══════════════════════════════════════════════════ */
+function openCreateCampaignModal() {
+  const modal = $('create-campaign-modal');
+  if (!modal) return;
+  if ($('new-campaign-name')) $('new-campaign-name').value = '';
+  if ($('new-campaign-budget')) $('new-campaign-budget').value = '50';
+  if ($('new-campaign-status')) $('new-campaign-status').value = 'ENABLED';
+  modal.hidden = false;
+  setTimeout(() => {
+    if ($('new-campaign-name')) $('new-campaign-name').focus();
+  }, 50);
+}
+
+function closeCreateCampaignModal() {
+  const modal = $('create-campaign-modal');
+  if (modal) modal.hidden = true;
+}
+
+if ($('create-campaign-open-btn')) $('create-campaign-open-btn').onclick = openCreateCampaignModal;
+if ($('table-create-campaign-btn')) $('table-create-campaign-btn').onclick = openCreateCampaignModal;
+if ($('empty-create-campaign-btn')) $('empty-create-campaign-btn').onclick = openCreateCampaignModal;
+if ($('create-campaign-close')) $('create-campaign-close').onclick = closeCreateCampaignModal;
+if ($('create-campaign-cancel')) $('create-campaign-cancel').onclick = closeCreateCampaignModal;
+
+if ($('create-campaign-form')) {
+  $('create-campaign-form').onsubmit = async (ev) => {
+    ev.preventDefault();
+    const btn = $('create-campaign-submit');
+    const name = $('new-campaign-name') ? $('new-campaign-name').value.trim() : '';
+    const budgetVal = $('new-campaign-budget') ? $('new-campaign-budget').value.trim() : '';
+    let channel = 'Search';
+    if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
+      const channelRadio = document.querySelector('input[name="new-campaign-channel"]:checked');
+      if (channelRadio) channel = channelRadio.value;
+    }
+    const status = $('new-campaign-status') ? $('new-campaign-status').value : 'ENABLED';
+    const bidding_strategy = $('new-campaign-bidding') ? $('new-campaign-bidding').value : 'Maximize Conversions';
+    const target_location = $('new-campaign-location') ? $('new-campaign-location').value : 'Global';
+
+    if (!name) {
+      toast('Campaign name is required.', 'error');
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Creating…';
+    }
+
+    try {
+      const res = await workspaceRequest('/' + activeWs + '/campaigns/create', 'POST', {
+        name,
+        channel,
+        budget: budgetVal ? `$${parseFloat(budgetVal).toFixed(2)}/day` : '$50.00/day',
+        status,
+        bidding_strategy,
+        target_location,
+      });
+
+      toast(`Campaign "${res.campaign.name}" created and launched!`, 'success');
+      closeCreateCampaignModal();
+      await loadWorkspaceCampaigns(activeWs);
+      await loadCampaigns(activeWs, currentManage);
+      showView('campaigns');
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Create Campaign';
+      }
+    }
+  };
 }
 
 /* ── Boot ────────────────────────────────────────── */

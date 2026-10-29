@@ -43,8 +43,14 @@ export function workspaceRoutes(app, db, session) {
         budget TEXT NOT NULL,
         imported BOOLEAN NOT NULL DEFAULT false,
         imported_at BIGINT NOT NULL DEFAULT 0,
+        created_by BIGINT REFERENCES eightlm.users(id),
+        bidding_strategy TEXT DEFAULT 'Maximize Conversions',
+        target_location TEXT DEFAULT 'Global',
         PRIMARY KEY (workspace_id, id)
       );
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS created_by BIGINT REFERENCES eightlm.users(id);
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS bidding_strategy TEXT DEFAULT 'Maximize Conversions';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS target_location TEXT DEFAULT 'Global';
       CREATE TABLE IF NOT EXISTS eightlm.oauth_tokens (
         workspace_id BIGINT PRIMARY KEY REFERENCES eightlm.workspaces(id) ON DELETE CASCADE,
         provider TEXT NOT NULL DEFAULT 'google',
@@ -468,6 +474,100 @@ export function workspaceRoutes(app, db, session) {
     );
 
     res.json({ ok: true, imported_count: selectedIds.length });
+  });
+
+  // Create Campaign Module (Launch and track a new campaign)
+  app.post("/api/workspaces/:id/campaigns/create", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    if (!["Owner", "Admin", "Editor", "Publisher"].includes(ctx.role))
+      return res.status(403).json({ error: "Only owners, admins, editors, and publishers can create campaigns." });
+
+    const { name, channel, budget, status, bidding_strategy, target_location } = req.body;
+    if (!name || name.trim().length < 2)
+      return res.status(400).json({ error: "Campaign name is required (minimum 2 characters)." });
+
+    let cleanBudget = "$50.00/day";
+    if (budget) {
+      const num = parseFloat(String(budget).replace(/[^0-9.]/g, ""));
+      if (!isNaN(num) && num > 0) cleanBudget = `$${num.toFixed(2)}/day`;
+    }
+
+    const cleanStatus = (status || "ENABLED").toUpperCase() === "PAUSED" ? "PAUSED" : "ENABLED";
+    const cleanChannel = channel || "Search";
+    const now = Date.now();
+
+    const ads = await db.get(
+      "SELECT customer_id FROM eightlm.google_ads WHERE workspace_id=$1",
+      req.params.id,
+    );
+    const customerId = ads?.customer_id || "Google Ads";
+    const campaignId = String(now);
+
+    await db.run(
+      `INSERT INTO eightlm.campaigns(id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at, created_by, bidding_strategy, target_location)
+       VALUES($1, $2, $3, $4, $5, $6, $7, true, $8, $9, $10, $11)`,
+      campaignId, req.params.id, customerId, name.trim(), cleanChannel, cleanStatus, cleanBudget, now, ctx.user.id, bidding_strategy || "Maximize Conversions", target_location || "Global",
+    );
+
+    await db.run(
+      "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
+      req.params.id, ctx.user.email, `Created new ${cleanChannel} campaign: "${name.trim()}" (${cleanBudget})`, now,
+    );
+
+    res.json({
+      ok: true,
+      campaign: {
+        id: campaignId,
+        name: name.trim(),
+        channel: cleanChannel,
+        status: cleanStatus,
+        budget: cleanBudget,
+        imported: true,
+      },
+    });
+  });
+
+  // Toggle or update campaign status (ENABLED / PAUSED)
+  app.patch("/api/workspaces/:id/campaigns/:cId/status", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    if (!["Owner", "Admin", "Editor", "Publisher"].includes(ctx.role))
+      return res.status(403).json({ error: "Only owners, admins, editors, and publishers can update campaign status." });
+
+    const cleanStatus = (req.body.status || "ENABLED").toUpperCase() === "PAUSED" ? "PAUSED" : "ENABLED";
+
+    const result = await db.run(
+      "UPDATE eightlm.campaigns SET status=$1 WHERE workspace_id=$2 AND id=$3",
+      cleanStatus, req.params.id, req.params.cId,
+    );
+
+    await db.run(
+      "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
+      req.params.id, ctx.user.email, `Updated campaign ${req.params.cId} status to ${cleanStatus}`, Date.now(),
+    );
+
+    res.json({ ok: true, status: cleanStatus });
+  });
+
+  // Delete / Remove campaign from workspace
+  app.delete("/api/workspaces/:id/campaigns/:cId", async (req, res) => {
+    const ctx = await adsSession(req, res);
+    if (!ctx) return;
+    if (!["Owner", "Admin", "Editor"].includes(ctx.role))
+      return res.status(403).json({ error: "Only owners, admins, and editors can delete campaigns." });
+
+    await db.run(
+      "DELETE FROM eightlm.campaigns WHERE workspace_id=$1 AND id=$2",
+      req.params.id, req.params.cId,
+    );
+
+    await db.run(
+      "INSERT INTO eightlm.activity(workspace_id,actor,action,created) VALUES($1,$2,$3,$4)",
+      req.params.id, ctx.user.email, `Removed campaign ${req.params.cId} from workspace`, Date.now(),
+    );
+
+    res.json({ ok: true });
   });
   const roles = ["Admin", "Editor", "Publisher", "Viewer"];
   const audit = async (w, u, a) =>
