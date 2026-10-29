@@ -110,27 +110,64 @@ const path = require("node:path");
   });
   await page.locator("#nav-campaigns").click();
   await page.locator("#create-campaign-open-btn").click();
-  await page.locator("#search-name").fill("Brand Search");
-  await page.locator("#search-adgroup").fill("Brand");
-  await page.locator("#search-budget").fill("100");
-  await page.locator("#search-cpc").fill("5");
-  await page.locator("#search-url").fill("https://example.com");
-  await page.locator("#search-keywords").fill("brand services");
-  await page
-    .locator("#search-headlines")
-    .fill("Explore Our Services\nFind Your Solution\nContact Our Team");
-  await page
-    .locator("#search-descriptions")
-    .fill(
-      "Find the service you need on our website.\nSpeak to our team to learn about your options.",
-    );
-  await page.locator("#search-eu").check();
-  await page.evaluate(() => scrollTo(0, 0));
+  await page.locator("#wizard-pane-1").waitFor({ state: "visible" });
   await page.screenshot({
-    path: path.resolve("../outputs/search-campaign-builder.png"),
+    path: path.resolve("../outputs/restored-campaign-objective.png"),
     fullPage: true,
   });
-  await page.locator("#save-search-draft").click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    "Objective mobile overflow",
+  );
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator("#wizard-step-1-next").click();
+  assert.equal(
+    await page
+      .locator('[data-type="Performance Max"]')
+      .getAttribute("aria-disabled"),
+    "true",
+  );
+  await page.locator("#wizard-step-2-next").click();
+  await page.locator("#wizard-campaign-name").fill("Brand Search");
+  await page.locator("#wizard-step-3-next").click();
+  assert.equal(
+    await page.locator("#wizard-bidding-focus").inputValue(),
+    "Manual CPC",
+  );
+  await page.locator("#wizard-step-4-next").click();
+  await page.locator("#wizard-step-5-next").click();
+  await page.locator("#rsa-final-url").fill("https://example.com");
+  await page.locator("#wizard-keywords-input").fill("brand services");
+  for (const [i, text] of [
+    "Explore Our Services",
+    "Find Your Solution",
+    "Contact Our Team",
+  ].entries())
+    await page.locator(".rsa-hl-input").nth(i).fill(text);
+  for (const [i, text] of [
+    "Find the service you need on our website.",
+    "Speak to our team to learn about your options.",
+  ].entries())
+    await page.locator(".rsa-desc-input").nth(i).fill(text);
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.screenshot({
+    path: path.resolve("../outputs/restored-campaign-ads.png"),
+    fullPage: true,
+  });
+  await page.locator("#wizard-step-6-next").click();
+  await page.locator("#wizard-step-7-next").click();
+  await page.locator("#wizard-budget-input").fill("100");
+  await page.locator("#wizard-step-8-next").click();
+  await page.locator("#wizard-adgroup").fill("Brand");
+  await page.locator("#wizard-max-cpc").fill("5");
+  await page.locator("#wizard-eu").check();
+  await page.locator("#wizard-step-9-back").click();
+  assert.equal(await page.locator("#wizard-budget-input").inputValue(), "100");
+  await page.locator("#wizard-step-8-next").click();
+  await page.locator("#wizard-publish-btn").click();
   await page
     .getByRole("button", { name: "Publish paused", exact: true })
     .waitFor();

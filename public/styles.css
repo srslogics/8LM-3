@@ -1900,3 +1900,43 @@ details.role-guide p {
     padding: 8px 12px;
   }
 }
+
+#view-create-campaign [aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+#wizard-publish-options {
+  margin-bottom: 24px;
+}
+#wizard-publish-options label {
+  display: block;
+  margin: 12px 0 6px;
+}
+#wizard-publish-options input:not([type="checkbox"]),
+#wizard-publish-options select {
+  width: 100%;
+  max-width: 400px;
+  min-height: 40px;
+}
+@media (max-width: 650px) {
+  .wizard-container {
+    padding: 0 !important;
+    gap: 16px;
+  }
+  .wizard-card {
+    padding: 18px;
+  }
+  .wizard-grid,
+  .budget-tier-grid {
+    grid-template-columns: 1fr;
+  }
+  .wizard-steps {
+    max-width: calc(100vw - 32px);
+  }
+  .rsa-editor-container {
+    flex-direction: column;
+  }
+  .review-item-row {
+    grid-template-columns: 1fr;
+  }
+}
