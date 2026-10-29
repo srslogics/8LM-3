@@ -51,6 +51,13 @@ export function workspaceRoutes(app, db, session) {
       ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS created_by BIGINT REFERENCES eightlm.users(id);
       ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS bidding_strategy TEXT DEFAULT 'Maximize Conversions';
       ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS target_location TEXT DEFAULT 'Global';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS objective TEXT DEFAULT 'Sales';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS conversion_goals TEXT DEFAULT 'Purchases, Phone call leads';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS ways_to_reach TEXT DEFAULT 'Website visits';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS website_url TEXT DEFAULT '';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS phone_number TEXT DEFAULT '';
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS optimize_new_customers BOOLEAN DEFAULT false;
+      ALTER TABLE eightlm.campaigns ADD COLUMN IF NOT EXISTS reengage_lapsed_customers BOOLEAN DEFAULT false;
       CREATE TABLE IF NOT EXISTS eightlm.oauth_tokens (
         workspace_id BIGINT PRIMARY KEY REFERENCES eightlm.workspaces(id) ON DELETE CASCADE,
         provider TEXT NOT NULL DEFAULT 'google',
@@ -400,7 +407,7 @@ export function workspaceRoutes(app, db, session) {
 
     // Return genuine campaigns only (excluding any legacy placeholder test items)
     const rows = await db.all(
-      "SELECT id, name, channel, status, budget, imported FROM eightlm.campaigns WHERE workspace_id=$1 AND id NOT LIKE 'c-%' ORDER BY id ASC",
+      "SELECT id, name, channel, status, budget, imported, bidding_strategy, target_location, objective FROM eightlm.campaigns WHERE workspace_id=$1 AND id NOT LIKE 'c-%' ORDER BY id ASC",
       req.params.id,
     );
 
@@ -483,7 +490,22 @@ export function workspaceRoutes(app, db, session) {
     if (!["Owner", "Admin", "Editor", "Publisher"].includes(ctx.role))
       return res.status(403).json({ error: "Only owners, admins, editors, and publishers can create campaigns." });
 
-    const { name, channel, budget, status, bidding_strategy, target_location } = req.body;
+    const {
+      name,
+      channel,
+      budget,
+      status,
+      bidding_strategy,
+      target_location,
+      objective,
+      conversion_goals,
+      ways_to_reach,
+      website_url,
+      phone_number,
+      optimize_new_customers,
+      reengage_lapsed_customers,
+    } = req.body;
+
     if (!name || name.trim().length < 2)
       return res.status(400).json({ error: "Campaign name is required (minimum 2 characters)." });
 
@@ -505,9 +527,17 @@ export function workspaceRoutes(app, db, session) {
     const campaignId = String(now);
 
     await db.run(
-      `INSERT INTO eightlm.campaigns(id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at, created_by, bidding_strategy, target_location)
-       VALUES($1, $2, $3, $4, $5, $6, $7, true, $8, $9, $10, $11)`,
-      campaignId, req.params.id, customerId, name.trim(), cleanChannel, cleanStatus, cleanBudget, now, ctx.user.id, bidding_strategy || "Maximize Conversions", target_location || "Global",
+      `INSERT INTO eightlm.campaigns(
+         id, workspace_id, customer_id, name, channel, status, budget, imported, imported_at, created_by,
+         bidding_strategy, target_location, objective, conversion_goals, ways_to_reach,
+         website_url, phone_number, optimize_new_customers, reengage_lapsed_customers
+       )
+       VALUES($1, $2, $3, $4, $5, $6, $7, true, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+      campaignId, req.params.id, customerId, name.trim(), cleanChannel, cleanStatus, cleanBudget, now, ctx.user.id,
+      bidding_strategy || "Maximise conversions", target_location || "Global / All Countries",
+      objective || "Sales", conversion_goals || "Purchases, Phone call leads",
+      ways_to_reach || "Website visits", website_url || "", phone_number || "",
+      Boolean(optimize_new_customers), Boolean(reengage_lapsed_customers),
     );
 
     await db.run(
@@ -523,6 +553,9 @@ export function workspaceRoutes(app, db, session) {
         channel: cleanChannel,
         status: cleanStatus,
         budget: cleanBudget,
+        objective: objective || "Sales",
+        bidding_strategy: bidding_strategy || "Maximise conversions",
+        target_location: target_location || "Global / All Countries",
         imported: true,
       },
     });

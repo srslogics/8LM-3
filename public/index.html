@@ -374,6 +374,462 @@
         </div>
       </section>
 
+      <!-- ══════ VIEW: Create Campaign Wizard (Google Ads Style) ══════ -->
+      <section id="view-create-campaign" class="page-view" hidden>
+        <!-- Header -->
+        <div class="page-header" style="margin-bottom:24px;">
+          <div class="page-header-left">
+            <div class="breadcrumb">
+              <a href="#campaigns" id="wizard-breadcrumb-campaigns" style="color:var(--gcp-blue);text-decoration:none;font-weight:500;">Campaigns</a>
+              <span> › </span>
+              <span id="wizard-breadcrumb-current">New campaign</span>
+            </div>
+            <h1 id="wizard-main-title" style="margin-top:6px;font-size:24px;">What's your campaign objective?</h1>
+          </div>
+          <div class="page-header-right">
+            <button id="wizard-cancel-btn-top" class="btn btn-outline" type="button">Cancel</button>
+          </div>
+        </div>
+
+        <div class="wizard-container">
+          <!-- Left Navigation Stepper -->
+          <aside class="wizard-sidebar">
+            <ol class="wizard-steps" id="wizard-steps-list">
+              <li class="wizard-step-item active" data-step="1" id="wizard-nav-step-1">
+                <div class="wizard-step-icon" id="wizard-icon-1">1</div>
+                <div class="wizard-step-info">
+                  <div class="wizard-step-title">Objective</div>
+                  <div class="wizard-step-sub" id="wizard-nav-sub-1">Sales</div>
+                </div>
+              </li>
+              <li class="wizard-step-item" data-step="2" id="wizard-nav-step-2">
+                <div class="wizard-step-icon" id="wizard-icon-2">2</div>
+                <div class="wizard-step-info">
+                  <div class="wizard-step-title">Campaign type</div>
+                  <div class="wizard-step-sub" id="wizard-nav-sub-2">Search</div>
+                </div>
+              </li>
+              <li class="wizard-step-item" data-step="3" id="wizard-nav-step-3">
+                <div class="wizard-step-icon" id="wizard-icon-3">3</div>
+                <div class="wizard-step-info">
+                  <div class="wizard-step-title">Campaign settings</div>
+                  <div class="wizard-step-sub" id="wizard-nav-sub-3">Name &amp; reach</div>
+                </div>
+              </li>
+              <li class="wizard-step-item" data-step="4" id="wizard-nav-step-4">
+                <div class="wizard-step-icon" id="wizard-icon-4">4</div>
+                <div class="wizard-step-info">
+                  <div class="wizard-step-title">Bidding &amp; budget</div>
+                  <div class="wizard-step-sub" id="wizard-nav-sub-4">Conversions &amp; $50</div>
+                </div>
+              </li>
+              <li class="wizard-step-item" data-step="5" id="wizard-nav-step-5">
+                <div class="wizard-step-icon" id="wizard-icon-5">5</div>
+                <div class="wizard-step-info">
+                  <div class="wizard-step-title">Review &amp; publish</div>
+                  <div class="wizard-step-sub" id="wizard-nav-sub-5">Ready to launch</div>
+                </div>
+              </li>
+            </ol>
+          </aside>
+
+          <!-- Main Step Content -->
+          <div class="wizard-content">
+
+            <!-- ── STEP 1: CAMPAIGN OBJECTIVE (Screenshots 1 & 2) ── -->
+            <div class="wizard-step-pane" id="wizard-pane-1">
+              <div class="wizard-card">
+                <h2 class="wizard-card-title">Choose your objective</h2>
+                <p class="wizard-card-subtitle">Select an objective to tailor your experience to the goals and settings that will work best for your campaign</p>
+
+                <div class="wizard-grid" id="wizard-objective-grid">
+                  <!-- 1. Sales -->
+                  <div class="wizard-option-card selected" data-objective="Sales">
+                    <div class="wizard-option-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    </div>
+                    <div class="wizard-option-title">Sales</div>
+                    <div class="wizard-option-desc">Drive sales online, in app, by phone or in store</div>
+                  </div>
+
+                  <!-- 2. Leads -->
+                  <div class="wizard-option-card" data-objective="Leads">
+                    <div class="wizard-option-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div class="wizard-option-title">Leads</div>
+                    <div class="wizard-option-desc">Get leads and other conversions by encouraging customers to take action</div>
+                  </div>
+
+                  <!-- 3. Website traffic -->
+                  <div class="wizard-option-card" data-objective="Website traffic">
+                    <div class="wizard-option-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    </div>
+                    <div class="wizard-option-title">Website traffic</div>
+                    <div class="wizard-option-desc">Get the right people to visit your website</div>
+                  </div>
+
+                  <!-- 4. App promotion -->
+                  <div class="wizard-option-card" data-objective="App promotion">
+                    <div class="wizard-option-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    </div>
+                    <div class="wizard-option-title">App promotion</div>
+                    <div class="wizard-option-desc">Get more installs, engagement and pre-registration for your app</div>
+                  </div>
+
+                  <!-- 5. YouTube reach -->
+                  <div class="wizard-option-card" data-objective="YouTube reach">
+                    <div class="wizard-option-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    </div>
+                    <div class="wizard-option-title">YouTube reach, views and engagements</div>
+                    <div class="wizard-option-desc">Drive awareness and consideration of your product or brand</div>
+                  </div>
+
+                  <!-- 6. Local shop visits -->
+                  <div class="wizard-option-card" data-objective="Local visits">
+                    <div class="wizard-option-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </div>
+                    <div class="wizard-option-title">Local shop visits and promotions</div>
+                    <div class="wizard-option-desc">Drive visits to local shops, including restaurants and dealerships.</div>
+                  </div>
+
+                  <!-- 7. Create without guidance -->
+                  <div class="wizard-option-card" data-objective="Without guidance">
+                    <div class="wizard-option-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </div>
+                    <div class="wizard-option-title">Create a campaign without guidance</div>
+                    <div class="wizard-option-desc">You'll choose a campaign next</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Conversion Goals Sub-card (Screenshot 2) -->
+              <div class="wizard-card" id="wizard-goals-card">
+                <h3 class="wizard-card-title" id="wizard-goals-card-title" style="font-size:17px;">Use these conversion goals to improve Sales</h3>
+                <p class="wizard-card-subtitle" style="margin-bottom:16px;">Conversion goals labelled as account default will use data from all of your campaigns to improve your bid strategy and campaign performance, even if they don't seem directly related to Sales.</p>
+
+                <div style="border:1px solid var(--gcp-border);border-radius:6px;overflow:hidden;background:var(--gcp-surface);margin-bottom:14px;">
+                  <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 40px;padding:10px 16px;background:var(--gcp-bg);font-size:11px;font-weight:600;color:var(--gcp-text-3);text-transform:uppercase;letter-spacing:.4px;">
+                    <span>Conversion goals</span>
+                    <span>Conversion Source</span>
+                    <span>Conversion Actions</span>
+                    <span></span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 40px;align-items:center;padding:14px 16px;border-top:1px solid var(--gcp-border);font-size:13px;">
+                    <div style="display:flex;align-items:center;gap:10px;font-weight:500;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-text-2)" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                      <span>Phone call leads <span style="color:var(--gcp-text-3);font-size:11px;font-weight:normal;">(account default)</span></span>
+                    </div>
+                    <span style="color:var(--gcp-text-2);">Call from Ads</span>
+                    <span style="color:#d93025;display:inline-flex;align-items:center;gap:4px;font-size:12px;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      1 action
+                    </span>
+                    <span style="color:var(--gcp-text-3);cursor:pointer;text-align:right;">⋮</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 40px;align-items:center;padding:14px 16px;border-top:1px solid var(--gcp-border);font-size:13px;">
+                    <div style="display:flex;align-items:center;gap:10px;font-weight:500;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gcp-text-2)" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                      <span>Purchases <span style="color:var(--gcp-text-3);font-size:11px;font-weight:normal;">(account default)</span></span>
+                    </div>
+                    <span style="color:var(--gcp-text-2);">Website (Google tag)</span>
+                    <span style="color:#1e8e3e;display:inline-flex;align-items:center;gap:4px;font-size:12px;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      Active
+                    </span>
+                    <span style="color:var(--gcp-text-3);cursor:pointer;text-align:right;">⋮</span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-outline" style="font-size:12px;padding:4px 10px;" id="wizard-add-goal-btn">+ Add goal</button>
+              </div>
+
+              <div class="wizard-actions">
+                <button type="button" class="btn btn-outline" id="wizard-step-1-cancel">Cancel</button>
+                <button type="button" class="btn btn-filled" id="wizard-step-1-next" style="padding:8px 24px;">Continue</button>
+              </div>
+            </div>
+
+            <!-- ── STEP 2: CAMPAIGN TYPE (Screenshot 3) ── -->
+            <div class="wizard-step-pane" id="wizard-pane-2" hidden>
+              <div class="wizard-card">
+                <h2 class="wizard-card-title">Select a campaign type</h2>
+                <p class="wizard-card-subtitle">Choose where and how your ads will appear across Google networks</p>
+
+                <div class="wizard-grid" id="wizard-type-grid">
+                  <!-- 1. Search -->
+                  <div class="wizard-option-card selected" data-type="Search">
+                    <div class="wizard-option-header">
+                      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                      <div class="wizard-option-title">Search</div>
+                    </div>
+                    <div class="wizard-option-desc">Drive sales on Google Search with text ads</div>
+                  </div>
+
+                  <!-- 2. Performance Max -->
+                  <div class="wizard-option-card" data-type="Performance Max">
+                    <div class="wizard-option-header" style="display:flex;gap:6px;align-items:center;">
+                      <span style="display:inline-flex;gap:3px;align-items:center;">
+                        <span style="width:12px;height:12px;border-radius:50%;background:#4285F4;display:inline-block;"></span>
+                        <span style="width:12px;height:12px;border-radius:50%;background:#EA4335;display:inline-block;"></span>
+                        <span style="width:12px;height:12px;border-radius:50%;background:#34A853;display:inline-block;"></span>
+                      </span>
+                      <div class="wizard-option-title">Performance Max</div>
+                    </div>
+                    <div class="wizard-option-desc">Drive sales by reaching the right people wherever they're browsing with ads on Google Search, YouTube, Display and more</div>
+                  </div>
+
+                  <!-- 3. Demand Gen -->
+                  <div class="wizard-option-card" data-type="Demand Gen">
+                    <div class="wizard-option-header">
+                      <span style="font-size:16px;">✨</span>
+                      <div class="wizard-option-title">Demand Gen</div>
+                    </div>
+                    <div class="wizard-option-desc">Drive demand and conversions on YouTube, Google Display Network and more with image and video ads</div>
+                  </div>
+
+                  <!-- 4. Video -->
+                  <div class="wizard-option-card" data-type="Video">
+                    <div class="wizard-option-header">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#EA4335"><path d="M21.58 7.19a2.5 2.5 0 0 0-1.76-1.77C18.25 5 12 5 12 5s-6.25 0-7.82.42a2.5 2.5 0 0 0-1.76 1.77C2 8.76 2 12 2 12s0 3.24.42 4.81a2.5 2.5 0 0 0 1.76 1.77C5.75 19 12 19 12 19s6.25 0 7.82-.42a2.5 2.5 0 0 0 1.76-1.77C22 15.24 22 12 22 12s0-3.24-.42-4.81z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#fff"/></svg>
+                      <div class="wizard-option-title">Video</div>
+                    </div>
+                    <div class="wizard-option-desc">Drive sales on YouTube with your video ads</div>
+                  </div>
+
+                  <!-- 5. Display -->
+                  <div class="wizard-option-card" data-type="Display">
+                    <div class="wizard-option-header">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                      <div class="wizard-option-title">Display</div>
+                    </div>
+                    <div class="wizard-option-desc">Reach potential customers across 3 million sites and apps with your creative</div>
+                  </div>
+
+                  <!-- 6. Shopping -->
+                  <div class="wizard-option-card" data-type="Shopping">
+                    <div class="wizard-option-header">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                      <div class="wizard-option-title">Shopping</div>
+                    </div>
+                    <div class="wizard-option-desc">Promote your products from Merchant Center on Google Search with Shopping ads</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wizard-actions">
+                <button type="button" class="btn btn-outline" id="wizard-step-2-back">Back</button>
+                <button type="button" class="btn btn-filled" id="wizard-step-2-next" style="padding:8px 24px;">Continue</button>
+              </div>
+            </div>
+
+            <!-- ── STEP 3: CAMPAIGN NAME & REACH (Screenshot 4) ── -->
+            <div class="wizard-step-pane" id="wizard-pane-3" hidden>
+              <!-- Campaign Name Card -->
+              <div class="wizard-card">
+                <h2 class="wizard-card-title" style="font-size:18px;">Campaign name</h2>
+                <div style="margin-top:16px;">
+                  <input type="text" id="wizard-campaign-name" class="gcp-input" value="Sales-Search-1" style="width:100%;max-width:480px;height:42px;font-size:14px;" placeholder="e.g. Sales-Search-1" required>
+                </div>
+              </div>
+
+              <!-- Ways to Reach Goal Card -->
+              <div class="wizard-card">
+                <h2 class="wizard-card-title" style="font-size:18px;display:flex;align-items:center;gap:6px;">
+                  Select the ways that you'd like to reach your goal
+                  <span style="font-size:14px;color:var(--gcp-text-3);cursor:help;" title="Google Ads will tailor your campaign settings to match these selected channels">ⓘ</span>
+                </h2>
+                <p class="wizard-card-subtitle" style="margin-bottom:18px;">Choose how customers will connect with your business</p>
+
+                <div style="display:flex;flex-direction:column;gap:18px;">
+                  <!-- Website visits -->
+                  <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+                    <input type="checkbox" id="wizard-reach-website" checked style="margin-top:4px;accent-color:var(--gcp-blue);transform:scale(1.15);">
+                    <div style="flex:1;">
+                      <div style="font-weight:600;font-size:14px;color:var(--gcp-text);">Website visits</div>
+                      <div style="font-size:12px;color:var(--gcp-text-2);margin-bottom:8px;">Drive high-intent buyers directly to your landing page or website</div>
+                      <div id="wizard-reach-website-box">
+                        <input type="url" id="wizard-website-url" class="gcp-input" placeholder="https://example.com" value="https://srslogics.com" style="width:100%;max-width:480px;height:36px;font-size:13px;">
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Phone calls -->
+                  <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+                    <input type="checkbox" id="wizard-reach-phone" style="margin-top:4px;accent-color:var(--gcp-blue);transform:scale(1.15);">
+                    <div style="flex:1;">
+                      <div style="font-weight:600;font-size:14px;color:var(--gcp-text);">Phone calls</div>
+                      <div style="font-size:12px;color:var(--gcp-text-2);margin-bottom:8px;">Show a clickable phone number in your ads for instant inbound calls</div>
+                      <div id="wizard-reach-phone-box" hidden>
+                        <input type="tel" id="wizard-phone-number" class="gcp-input" placeholder="+1 800-555-0199" style="width:100%;max-width:480px;height:36px;font-size:13px;">
+                      </div>
+                    </div>
+                  </label>
+
+                  <!-- Shop visits -->
+                  <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+                    <input type="checkbox" id="wizard-reach-shop" style="margin-top:4px;accent-color:var(--gcp-blue);transform:scale(1.15);">
+                    <div>
+                      <div style="font-weight:600;font-size:14px;color:var(--gcp-text);">Shop visits</div>
+                      <div style="font-size:12px;color:var(--gcp-text-2);">Drive local foot traffic to your physical store location</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="wizard-actions">
+                <button type="button" class="btn btn-outline" id="wizard-step-3-back">Back</button>
+                <button type="button" class="btn btn-filled" id="wizard-step-3-next" style="padding:8px 24px;">Continue</button>
+              </div>
+            </div>
+
+            <!-- ── STEP 4: BIDDING & BUDGET (Screenshot 5) ── -->
+            <div class="wizard-step-pane" id="wizard-pane-4" hidden>
+              <!-- Bidding Card -->
+              <div class="wizard-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                  <h2 class="wizard-card-title" style="margin:0;font-size:18px;">Bidding</h2>
+                </div>
+                <div style="margin-bottom:16px;">
+                  <label for="wizard-bidding-focus" style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">What do you want to focus on?</label>
+                  <select id="wizard-bidding-focus" class="gcp-input" style="width:100%;max-width:400px;height:42px;font-size:14px;">
+                    <option value="Maximise conversions" selected>Maximise conversions</option>
+                    <option value="Maximise clicks">Maximise clicks</option>
+                    <option value="Maximise conversion value">Maximise conversion value</option>
+                    <option value="Impression share">Impression share</option>
+                  </select>
+                </div>
+                <p style="font-size:12px;color:var(--gcp-text-3);margin:0;">Alternative bid strategies like portfolios are available in settings after you create your campaign.</p>
+              </div>
+
+              <!-- Customer Acquisition Card -->
+              <div class="wizard-card">
+                <h2 class="wizard-card-title" style="font-size:18px;margin-bottom:14px;">Customer acquisition</h2>
+                <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+                  <input type="checkbox" id="wizard-opt-new-customers" style="margin-top:4px;accent-color:var(--gcp-blue);transform:scale(1.15);">
+                  <div>
+                    <div style="font-weight:600;font-size:14px;color:var(--gcp-text);margin-bottom:4px;">Optimise for new customers</div>
+                    <div style="font-size:12px;color:var(--gcp-text-2);line-height:1.5;">By default, your campaign bids equally for new and existing customers. However, you can configure your customer acquisition settings to optimise for acquiring new customers.</div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Customer Retention Card (Screenshot 5) -->
+              <div class="wizard-card">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                  <h2 class="wizard-card-title" style="margin:0;font-size:18px;">Customer retention</h2>
+                  <span style="font-size:10px;font-weight:700;color:var(--gcp-blue);background:rgba(66,133,244,0.1);padding:2px 6px;border-radius:4px;text-transform:uppercase;">NEW</span>
+                </div>
+                <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+                  <input type="checkbox" id="wizard-opt-retention" style="margin-top:4px;accent-color:var(--gcp-blue);transform:scale(1.15);">
+                  <div>
+                    <div style="font-weight:600;font-size:14px;color:var(--gcp-text);margin-bottom:4px;">Adjust your bidding to help you re-engage existing, high-value and lapsed customers</div>
+                    <div style="font-size:12px;color:var(--gcp-text-2);line-height:1.5;">Your campaign will be limited to only lapsed customers.</div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Budget & Location Card -->
+              <div class="wizard-card">
+                <h2 class="wizard-card-title" style="font-size:18px;margin-bottom:16px;">Budget &amp; Target Location</h2>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                  <div>
+                    <label for="wizard-budget-input" style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Average daily budget (USD) *</label>
+                    <div style="display:flex;align-items:center;border:1px solid var(--gcp-border);border-radius:4px;overflow:hidden;background:var(--gcp-surface);height:42px;">
+                      <span style="padding:0 12px;color:var(--gcp-text-3);font-size:15px;font-weight:600;">$</span>
+                      <input type="number" id="wizard-budget-input" min="1" step="0.5" value="50.00" required style="border:none;outline:none;width:100%;font-size:14px;background:transparent;">
+                      <span style="padding:0 12px;color:var(--gcp-text-3);font-size:12px;">/day</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label for="wizard-location-select" style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Target location</label>
+                    <select id="wizard-location-select" class="gcp-input" style="width:100%;height:42px;font-size:14px;">
+                      <option value="Global / All Countries" selected>Global / All Countries</option>
+                      <option value="United States &amp; Canada">United States &amp; Canada</option>
+                      <option value="India">India</option>
+                      <option value="United Kingdom">United Kingdom</option>
+                      <option value="European Union">European Union</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wizard-actions">
+                <button type="button" class="btn btn-outline" id="wizard-step-4-back">Back</button>
+                <button type="button" class="btn btn-filled" id="wizard-step-4-next" style="padding:8px 24px;">Continue</button>
+              </div>
+            </div>
+
+            <!-- ── STEP 5: REVIEW & PUBLISH ── -->
+            <div class="wizard-step-pane" id="wizard-pane-5" hidden>
+              <div class="wizard-card">
+                <h2 class="wizard-card-title">Review your campaign</h2>
+                <p class="wizard-card-subtitle">Review your campaign details before publishing to your Google Ads account</p>
+
+                <div style="border:1px solid var(--gcp-border);border-radius:8px;overflow:hidden;margin-bottom:20px;">
+                  <div style="display:grid;grid-template-columns:180px 1fr;padding:12px 18px;border-bottom:1px solid var(--gcp-border);font-size:13px;">
+                    <span style="color:var(--gcp-text-3);font-weight:500;">Campaign name</span>
+                    <strong id="review-name" style="color:var(--gcp-text);">Sales-Search-1</strong>
+                  </div>
+                  <div style="display:grid;grid-template-columns:180px 1fr;padding:12px 18px;border-bottom:1px solid var(--gcp-border);font-size:13px;">
+                    <span style="color:var(--gcp-text-3);font-weight:500;">Objective</span>
+                    <span id="review-objective" style="color:var(--gcp-text);">Sales</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:180px 1fr;padding:12px 18px;border-bottom:1px solid var(--gcp-border);font-size:13px;">
+                    <span style="color:var(--gcp-text-3);font-weight:500;">Campaign type</span>
+                    <span id="review-type" style="color:var(--gcp-text);">Search</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:180px 1fr;padding:12px 18px;border-bottom:1px solid var(--gcp-border);font-size:13px;">
+                    <span style="color:var(--gcp-text-3);font-weight:500;">Conversion goals</span>
+                    <span id="review-goals" style="color:var(--gcp-text);">Purchases, Phone call leads</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:180px 1fr;padding:12px 18px;border-bottom:1px solid var(--gcp-border);font-size:13px;">
+                    <span style="color:var(--gcp-text-3);font-weight:500;">Ways to reach goal</span>
+                    <span id="review-reach" style="color:var(--gcp-text);">Website visits (https://srslogics.com)</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:180px 1fr;padding:12px 18px;border-bottom:1px solid var(--gcp-border);font-size:13px;">
+                    <span style="color:var(--gcp-text-3);font-weight:500;">Bidding focus</span>
+                    <span id="review-bidding" style="color:var(--gcp-text);">Maximise conversions</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:180px 1fr;padding:12px 18px;border-bottom:1px solid var(--gcp-border);font-size:13px;">
+                    <span style="color:var(--gcp-text-3);font-weight:500;">Daily budget</span>
+                    <strong id="review-budget" style="color:var(--gcp-text);">$50.00 / day</strong>
+                  </div>
+                  <div style="display:grid;grid-template-columns:180px 1fr;padding:12px 18px;font-size:13px;">
+                    <span style="color:var(--gcp-text-3);font-weight:500;">Target location</span>
+                    <span id="review-location" style="color:var(--gcp-text);">Global / All Countries</span>
+                  </div>
+                </div>
+
+                <div style="background:var(--gcp-bg);border:1px solid var(--gcp-border);border-radius:6px;padding:16px;display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-weight:600;font-size:13px;color:var(--gcp-text);margin-bottom:2px;">Initial status</div>
+                    <div style="font-size:12px;color:var(--gcp-text-3);">Choose whether to activate immediately or save as draft</div>
+                  </div>
+                  <select id="wizard-status-select" class="gcp-input" style="height:36px;font-size:13px;">
+                    <option value="ENABLED" selected>Enabled (Live)</option>
+                    <option value="PAUSED">Paused (Draft)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="wizard-actions">
+                <button type="button" class="btn btn-outline" id="wizard-step-5-back">Back</button>
+                <button type="button" class="btn btn-filled" id="wizard-publish-btn" style="padding:10px 28px;font-size:14px;background:#1a73e8;border-color:#1a73e8;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Publish Campaign
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
       <!-- ══════ VIEW: Google Ads ══════ -->
       <section id="view-ads" class="page-view" hidden>
         <div class="page-header">
@@ -678,124 +1134,6 @@
         </div>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- ===================== CREATE CAMPAIGN MODAL ===================== -->
-<div id="create-campaign-modal" class="modal-backdrop" hidden>
-  <div class="gcp-modal" role="dialog" aria-modal="true" style="max-width: 560px;">
-    <!-- Modal Header -->
-    <div class="modal-header">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <rect width="24" height="24" rx="4" fill="#F8F9FA"/>
-          <path d="M12.5 4.5l-6 10.4a3 3 0 004.1 4.1l6-10.4a3 3 0 00-4.1-4.1z" fill="#FBBC04"/>
-          <path d="M15.5 14.8l-1.5 2.6a3 3 0 01-4.1-4.1l1.5-2.6a3 3 0 014.1 4.1z" fill="#4285F4"/>
-          <circle cx="7" cy="17" r="2.5" fill="#34A853"/>
-        </svg>
-        <h3 style="font-size:16px;font-weight:600;margin:0;">Create Ad Campaign</h3>
-      </div>
-      <button id="create-campaign-close" class="modal-close-btn" type="button" aria-label="Close">&times;</button>
-    </div>
-
-    <!-- Modal Body -->
-    <form id="create-campaign-form" class="modal-body">
-      <p style="color:var(--gcp-text-2);font-size:13px;line-height:1.5;margin-bottom:18px;">
-        Configure and launch a new campaign. Campaigns created here are immediately tracked in this workspace.
-      </p>
-
-      <!-- Campaign Name -->
-      <div class="field" style="margin-bottom:16px;">
-        <label for="new-campaign-name" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Campaign name *</label>
-        <input type="text" id="new-campaign-name" class="gcp-input" placeholder="e.g. Q4 Black Friday — Brand Search" required style="width:100%;box-sizing:border-box;">
-      </div>
-
-      <!-- Channel & Objective Grid -->
-      <div class="field" style="margin-bottom:16px;">
-        <label style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Advertising channel *</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;cursor:pointer;font-size:13px;" class="channel-card">
-            <input type="radio" name="new-campaign-channel" value="Search" checked>
-            <div>
-              <strong>Search</strong>
-              <div style="font-size:11px;color:var(--gcp-text-3);">High-intent keywords</div>
-            </div>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;cursor:pointer;font-size:13px;" class="channel-card">
-            <input type="radio" name="new-campaign-channel" value="Performance Max">
-            <div>
-              <strong>Performance Max</strong>
-              <div style="font-size:11px;color:var(--gcp-text-3);">AI cross-network</div>
-            </div>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;cursor:pointer;font-size:13px;" class="channel-card">
-            <input type="radio" name="new-campaign-channel" value="Display">
-            <div>
-              <strong>Display</strong>
-              <div style="font-size:11px;color:var(--gcp-text-3);">Banner network ads</div>
-            </div>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;cursor:pointer;font-size:13px;" class="channel-card">
-            <input type="radio" name="new-campaign-channel" value="Video">
-            <div>
-              <strong>Video / YouTube</strong>
-              <div style="font-size:11px;color:var(--gcp-text-3);">In-stream &amp; Shorts</div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <!-- Budget & Status Row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-        <div class="field">
-          <label for="new-campaign-budget" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Daily budget (USD) *</label>
-          <div style="display:flex;align-items:center;border:1px solid var(--gcp-border);border-radius:4px;overflow:hidden;background:var(--gcp-surface);">
-            <span style="padding:0 10px;color:var(--gcp-text-3);font-size:14px;">$</span>
-            <input type="number" id="new-campaign-budget" min="1" step="0.5" placeholder="50.00" required style="border:none;outline:none;padding:8px 0;width:100%;font-size:14px;background:transparent;">
-            <span style="padding:0 10px;color:var(--gcp-text-3);font-size:12px;">/day</span>
-          </div>
-        </div>
-        <div class="field">
-          <label for="new-campaign-status" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Initial status</label>
-          <select id="new-campaign-status" class="gcp-input" style="width:100%;height:38px;box-sizing:border-box;">
-            <option value="ENABLED">Enabled (Live)</option>
-            <option value="PAUSED">Paused (Draft)</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Target Location & Bidding Strategy -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-        <div class="field">
-          <label for="new-campaign-bidding" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Bidding strategy</label>
-          <select id="new-campaign-bidding" class="gcp-input" style="width:100%;height:38px;box-sizing:border-box;">
-            <option value="Maximize Conversions">Maximize Conversions</option>
-            <option value="Maximize Clicks">Maximize Clicks</option>
-            <option value="Target CPA">Target CPA</option>
-            <option value="Target ROAS">Target ROAS</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="new-campaign-location" style="display:block;font-size:12px;font-weight:500;margin-bottom:6px;">Target location</label>
-          <select id="new-campaign-location" class="gcp-input" style="width:100%;height:38px;box-sizing:border-box;">
-            <option value="United States &amp; Canada">United States &amp; Canada</option>
-            <option value="Global / All Countries">Global / All Countries</option>
-            <option value="India">India</option>
-            <option value="United Kingdom">United Kingdom</option>
-            <option value="European Union">European Union</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid var(--gcp-border);">
-        <button id="create-campaign-cancel" class="btn btn-outline" type="button">Cancel</button>
-        <button id="create-campaign-submit" class="btn btn-filled" type="submit">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Create Campaign
-        </button>
-      </div>
-    </form>
   </div>
 </div>
 

@@ -266,6 +266,41 @@ details.role-guide p { margin-top: 10px; color: var(--gcp-text-2); line-height: 
 .kpi-label { font-size: 11px; font-weight: 500; color: var(--gcp-text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
 .kpi-value { font-size: 24px; font-weight: 600; color: var(--gcp-text); }
 
+/* ══════════════════════════════════════════════════
+   CAMPAIGN CREATION WIZARD (GOOGLE ADS STYLE)
+   ══════════════════════════════════════════════════ */
+.wizard-container { display: flex; gap: 32px; align-items: flex-start; max-width: 1040px; margin: 0 auto; }
+.wizard-sidebar { width: 220px; flex-shrink: 0; position: sticky; top: 80px; }
+.wizard-steps { list-style: none; margin: 0; padding: 0; position: relative; }
+.wizard-step-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; cursor: pointer; border-radius: 6px; transition: background .15s; margin-bottom: 4px; }
+.wizard-step-item:hover { background: var(--gcp-surface-2); }
+.wizard-step-icon { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--gcp-border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--gcp-text-3); background: var(--gcp-surface); flex-shrink: 0; transition: all .2s; }
+.wizard-step-item.active .wizard-step-icon { border-color: var(--gcp-blue); background: var(--gcp-blue); color: #fff; }
+.wizard-step-item.completed .wizard-step-icon { border-color: #1e8e3e; background: #1e8e3e; color: #fff; }
+.wizard-step-info { display: flex; flex-direction: column; min-width: 0; }
+.wizard-step-title { font-size: 13px; font-weight: 500; color: var(--gcp-text-2); }
+.wizard-step-item.active .wizard-step-title { color: var(--gcp-blue); font-weight: 600; }
+.wizard-step-item.completed .wizard-step-title { color: var(--gcp-text); }
+.wizard-step-sub { font-size: 11px; color: var(--gcp-text-3); font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wizard-content { flex: 1; min-width: 0; }
+.wizard-card { background: var(--gcp-surface); border: 1px solid var(--gcp-border); border-radius: 8px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.wizard-card-title { font-size: 20px; font-weight: 600; color: var(--gcp-text); margin: 0 0 6px 0; }
+.wizard-card-subtitle { font-size: 13px; color: var(--gcp-text-2); margin: 0 0 24px 0; line-height: 1.5; }
+.wizard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 8px; }
+.wizard-option-card { border: 1.5px solid var(--gcp-border); border-radius: 8px; padding: 18px; cursor: pointer; transition: all .15s ease; background: var(--gcp-surface); display: flex; flex-direction: column; gap: 8px; position: relative; user-select: none; }
+.wizard-option-card:hover { border-color: #b3d1ff; box-shadow: 0 2px 8px rgba(66,133,244,0.08); }
+.wizard-option-card.selected { border-color: var(--gcp-blue); border-width: 2px; background: rgba(66,133,244,0.04); }
+.wizard-option-icon { display: flex; align-items: center; justify-content: flex-start; margin-bottom: 2px; }
+.wizard-option-header { display: flex; align-items: center; gap: 12px; }
+.wizard-option-title { font-size: 14px; font-weight: 600; color: var(--gcp-text); }
+.wizard-option-desc { font-size: 12px; color: var(--gcp-text-2); line-height: 1.45; }
+.wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--gcp-border); }
+@media (max-width: 900px) {
+  .wizard-container { flex-direction: column; }
+  .wizard-sidebar { width: 100%; position: static; }
+  .wizard-steps { display: flex; overflow-x: auto; gap: 16px; padding-bottom: 12px; }
+}
+
 
 
 /* ── Utilities ───────────────────────────────────── */

@@ -60,19 +60,22 @@ function showView(view) {
   const viewCampaigns = $('view-campaigns');
   const viewMembers = $('view-members');
   const viewAds = $('view-ads');
+  const viewCreateCampaign = $('view-create-campaign');
   if (viewCampaigns) viewCampaigns.hidden = view !== 'campaigns';
   if (viewMembers) viewMembers.hidden = view !== 'members';
   if (viewAds) viewAds.hidden = view !== 'ads';
+  if (viewCreateCampaign) viewCreateCampaign.hidden = view !== 'create-campaign';
 
   const navCampaigns = $('nav-campaigns');
   const navMembers = $('nav-members');
   const navAds = $('nav-ads');
-  if (navCampaigns && navCampaigns.classList) navCampaigns.classList.toggle('active', view === 'campaigns');
+  if (navCampaigns && navCampaigns.classList) navCampaigns.classList.toggle('active', view === 'campaigns' || view === 'create-campaign');
   if (navMembers && navMembers.classList) navMembers.classList.toggle('active', view === 'members');
   if (navAds && navAds.classList) navAds.classList.toggle('active', view === 'ads');
 
   if (view === 'campaigns') loadWorkspaceCampaigns(activeWs);
   if (view === 'ads') loadAds(activeWs, currentManage);
+  if (view === 'create-campaign') initCampaignWizard();
 }
 
 if ($('nav-campaigns')) $('nav-campaigns').onclick = () => showView('campaigns');
@@ -1152,81 +1155,345 @@ async function loadWorkspaceCampaigns(wsId) {
 }
 
 /* ══════════════════════════════════════════════════
-   CREATE CAMPAIGN MODULE
+   CAMPAIGN CREATION WIZARD (GOOGLE ADS MULTI-STEP)
    ══════════════════════════════════════════════════ */
-function openCreateCampaignModal() {
-  const modal = $('create-campaign-modal');
-  if (!modal) return;
-  if ($('new-campaign-name')) $('new-campaign-name').value = '';
-  if ($('new-campaign-budget')) $('new-campaign-budget').value = '50';
-  if ($('new-campaign-status')) $('new-campaign-status').value = 'ENABLED';
-  modal.hidden = false;
-  setTimeout(() => {
-    if ($('new-campaign-name')) $('new-campaign-name').focus();
-  }, 50);
+let wizardState = {
+  currentStep: 1,
+  maxStepReached: 1,
+  objective: 'Sales',
+  channel: 'Search',
+  campaignName: 'Sales-Search-1',
+  reachWebsite: true,
+  websiteUrl: 'https://srslogics.com',
+  reachPhone: false,
+  phoneNumber: '',
+  reachShop: false,
+  biddingStrategy: 'Maximise conversions',
+  optimizeNewCustomers: false,
+  reengageLapsedCustomers: false,
+  budget: '50.00',
+  targetLocation: 'Global / All Countries',
+  status: 'ENABLED',
+};
+
+const STEP_TITLES = {
+  1: "What's your campaign objective?",
+  2: "Select a campaign type",
+  3: "Campaign settings",
+  4: "Bidding & budget",
+  5: "Review your campaign"
+};
+
+function openCreateCampaignWizard() {
+  wizardState.currentStep = 1;
+  wizardState.maxStepReached = 1;
+  wizardState.objective = 'Sales';
+  wizardState.channel = 'Search';
+  wizardState.campaignName = 'Sales-Search-1';
+  wizardState.budget = '50.00';
+  wizardState.targetLocation = 'Global / All Countries';
+  wizardState.status = 'ENABLED';
+
+  if ($('wizard-campaign-name')) $('wizard-campaign-name').value = 'Sales-Search-1';
+  if ($('wizard-budget-input')) $('wizard-budget-input').value = '50.00';
+  if ($('wizard-bidding-focus')) $('wizard-bidding-focus').value = 'Maximise conversions';
+  if ($('wizard-location-select')) $('wizard-location-select').value = 'Global / All Countries';
+  if ($('wizard-status-select')) $('wizard-status-select').value = 'ENABLED';
+  if ($('wizard-reach-website')) $('wizard-reach-website').checked = true;
+  if ($('wizard-reach-website-box')) $('wizard-reach-website-box').hidden = false;
+  if ($('wizard-reach-phone')) $('wizard-reach-phone').checked = false;
+  if ($('wizard-reach-phone-box')) $('wizard-reach-phone-box').hidden = true;
+  if ($('wizard-reach-shop')) $('wizard-reach-shop').checked = false;
+  if ($('wizard-opt-new-customers')) $('wizard-opt-new-customers').checked = false;
+  if ($('wizard-opt-retention')) $('wizard-opt-retention').checked = false;
+
+  showView('create-campaign');
+  renderWizardStep(1);
 }
 
-function closeCreateCampaignModal() {
-  const modal = $('create-campaign-modal');
-  if (modal) modal.hidden = true;
-}
-
-if ($('create-campaign-open-btn')) $('create-campaign-open-btn').onclick = openCreateCampaignModal;
-if ($('table-create-campaign-btn')) $('table-create-campaign-btn').onclick = openCreateCampaignModal;
-if ($('empty-create-campaign-btn')) $('empty-create-campaign-btn').onclick = openCreateCampaignModal;
-if ($('create-campaign-close')) $('create-campaign-close').onclick = closeCreateCampaignModal;
-if ($('create-campaign-cancel')) $('create-campaign-cancel').onclick = closeCreateCampaignModal;
-
-if ($('create-campaign-form')) {
-  $('create-campaign-form').onsubmit = async (ev) => {
-    ev.preventDefault();
-    const btn = $('create-campaign-submit');
-    const name = $('new-campaign-name') ? $('new-campaign-name').value.trim() : '';
-    const budgetVal = $('new-campaign-budget') ? $('new-campaign-budget').value.trim() : '';
-    let channel = 'Search';
-    if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
-      const channelRadio = document.querySelector('input[name="new-campaign-channel"]:checked');
-      if (channelRadio) channel = channelRadio.value;
+function updateSuggestedCampaignName() {
+  const nameInput = $('wizard-campaign-name');
+  if (nameInput) {
+    const objClean = (wizardState.objective || 'Sales').replace(/\s+/g, '-');
+    const chClean = (wizardState.channel || 'Search').replace(/\s+/g, '-');
+    const newName = `${objClean}-${chClean}-1`;
+    if (!nameInput.value || /^[A-Za-z]+-[A-Za-z]+-1$/.test(nameInput.value.trim())) {
+      nameInput.value = newName;
     }
-    const status = $('new-campaign-status') ? $('new-campaign-status').value : 'ENABLED';
-    const bidding_strategy = $('new-campaign-bidding') ? $('new-campaign-bidding').value : 'Maximize Conversions';
-    const target_location = $('new-campaign-location') ? $('new-campaign-location').value : 'Global';
+    wizardState.campaignName = nameInput.value.trim() || newName;
+  }
+}
 
+function renderWizardStep(stepNum) {
+  wizardState.currentStep = stepNum;
+  if (stepNum > wizardState.maxStepReached) {
+    wizardState.maxStepReached = stepNum;
+  }
+
+  // Update main title
+  if ($('wizard-main-title')) {
+    $('wizard-main-title').textContent = STEP_TITLES[stepNum] || "New campaign";
+  }
+
+  // Update stepper navigation
+  for (let i = 1; i <= 5; i++) {
+    const navItem = $('wizard-nav-step-' + i);
+    const icon = $('wizard-icon-' + i);
+    if (!navItem) continue;
+
+    if (i < stepNum) {
+      navItem.className = 'wizard-step-item completed';
+      if (icon) {
+        icon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      }
+    } else if (i === stepNum) {
+      navItem.className = 'wizard-step-item active';
+      if (icon) icon.textContent = String(i);
+    } else {
+      navItem.className = 'wizard-step-item';
+      if (icon) icon.textContent = String(i);
+    }
+  }
+
+  // Update sidebar sub labels
+  if ($('wizard-nav-sub-1')) $('wizard-nav-sub-1').textContent = wizardState.objective;
+  if ($('wizard-nav-sub-2')) $('wizard-nav-sub-2').textContent = wizardState.channel;
+  if ($('wizard-nav-sub-3')) {
+    const nameVal = $('wizard-campaign-name') ? $('wizard-campaign-name').value.trim() : wizardState.campaignName;
+    $('wizard-nav-sub-3').textContent = nameVal || 'Name & reach';
+  }
+  if ($('wizard-nav-sub-4')) {
+    const bVal = $('wizard-budget-input') ? $('wizard-budget-input').value.trim() : wizardState.budget;
+    $('wizard-nav-sub-4').textContent = `$${bVal || '50'}/day`;
+  }
+
+  // Show only active step pane
+  for (let i = 1; i <= 5; i++) {
+    const pane = $('wizard-pane-' + i);
+    if (pane) pane.hidden = (i !== stepNum);
+  }
+
+  // Step 5 Review population
+  if (stepNum === 5) {
+    populateWizardReview();
+  }
+
+  if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function populateWizardReview() {
+  const nameVal = $('wizard-campaign-name') ? $('wizard-campaign-name').value.trim() : wizardState.campaignName;
+  const budgetVal = $('wizard-budget-input') ? $('wizard-budget-input').value.trim() : wizardState.budget;
+  const locVal = $('wizard-location-select') ? $('wizard-location-select').value : wizardState.targetLocation;
+  const biddingVal = $('wizard-bidding-focus') ? $('wizard-bidding-focus').value : wizardState.biddingStrategy;
+
+  if ($('review-name')) $('review-name').textContent = nameVal || 'Untitled Campaign';
+  if ($('review-objective')) $('review-objective').textContent = wizardState.objective;
+  if ($('review-type')) $('review-type').textContent = wizardState.channel;
+  if ($('review-goals')) $('review-goals').textContent = 'Purchases (account default), Phone call leads';
+
+  const reachItems = [];
+  if ($('wizard-reach-website') && $('wizard-reach-website').checked) {
+    const url = $('wizard-website-url') ? $('wizard-website-url').value.trim() : '';
+    reachItems.push('Website visits' + (url ? ` (${url})` : ''));
+  }
+  if ($('wizard-reach-phone') && $('wizard-reach-phone').checked) {
+    const phone = $('wizard-phone-number') ? $('wizard-phone-number').value.trim() : '';
+    reachItems.push('Phone calls' + (phone ? ` (${phone})` : ''));
+  }
+  if ($('wizard-reach-shop') && $('wizard-reach-shop').checked) {
+    reachItems.push('Shop visits');
+  }
+  if ($('review-reach')) $('review-reach').textContent = reachItems.length ? reachItems.join(', ') : 'None selected';
+  if ($('review-bidding')) $('review-bidding').textContent = biddingVal;
+  if ($('review-budget')) $('review-budget').textContent = `$${parseFloat(budgetVal || 50).toFixed(2)} / day`;
+  if ($('review-location')) $('review-location').textContent = locVal;
+}
+
+let wizardInitialized = false;
+function initCampaignWizard() {
+  if (wizardInitialized) return;
+  wizardInitialized = true;
+
+  // Safe helper to query cards
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    // Step 1: Objective cards
+    document.querySelectorAll('#wizard-objective-grid .wizard-option-card').forEach(card => {
+      card.onclick = () => {
+        document.querySelectorAll('#wizard-objective-grid .wizard-option-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        const obj = card.getAttribute('data-objective') || 'Sales';
+        wizardState.objective = obj;
+        if ($('wizard-goals-card-title')) {
+          $('wizard-goals-card-title').textContent = `Use these conversion goals to improve ${obj}`;
+        }
+        if ($('wizard-nav-sub-1')) $('wizard-nav-sub-1').textContent = obj;
+        updateSuggestedCampaignName();
+      };
+    });
+
+    // Step 2: Campaign type cards
+    document.querySelectorAll('#wizard-type-grid .wizard-option-card').forEach(card => {
+      card.onclick = () => {
+        document.querySelectorAll('#wizard-type-grid .wizard-option-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        const t = card.getAttribute('data-type') || 'Search';
+        wizardState.channel = t;
+        if ($('wizard-nav-sub-2')) $('wizard-nav-sub-2').textContent = t;
+        updateSuggestedCampaignName();
+      };
+    });
+
+    // Left stepper clicks
+    document.querySelectorAll('.wizard-step-item').forEach(item => {
+      item.onclick = () => {
+        const step = parseInt(item.getAttribute('data-step'), 10);
+        if (step && step <= wizardState.maxStepReached) {
+          renderWizardStep(step);
+        }
+      };
+    });
+  }
+
+  // Reach checkbox toggles
+  if ($('wizard-reach-website')) {
+    $('wizard-reach-website').onchange = () => {
+      if ($('wizard-reach-website-box')) {
+        $('wizard-reach-website-box').hidden = !$('wizard-reach-website').checked;
+      }
+    };
+  }
+  if ($('wizard-reach-phone')) {
+    $('wizard-reach-phone').onchange = () => {
+      if ($('wizard-reach-phone-box')) {
+        $('wizard-reach-phone-box').hidden = !$('wizard-reach-phone').checked;
+      }
+    };
+  }
+
+  // Step 1 buttons
+  if ($('wizard-step-1-cancel')) $('wizard-step-1-cancel').onclick = () => showView('campaigns');
+  if ($('wizard-step-1-next')) $('wizard-step-1-next').onclick = () => renderWizardStep(2);
+
+  // Step 2 buttons
+  if ($('wizard-step-2-back')) $('wizard-step-2-back').onclick = () => renderWizardStep(1);
+  if ($('wizard-step-2-next')) $('wizard-step-2-next').onclick = () => {
+    updateSuggestedCampaignName();
+    renderWizardStep(3);
+  };
+
+  // Step 3 buttons
+  if ($('wizard-step-3-back')) $('wizard-step-3-back').onclick = () => renderWizardStep(2);
+  if ($('wizard-step-3-next')) $('wizard-step-3-next').onclick = () => {
+    const name = $('wizard-campaign-name') ? $('wizard-campaign-name').value.trim() : '';
     if (!name) {
-      toast('Campaign name is required.', 'error');
+      toast('Please enter a campaign name.', 'error');
+      if ($('wizard-campaign-name')) $('wizard-campaign-name').focus();
       return;
     }
-
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = 'Creating…';
-    }
-
-    try {
-      const res = await workspaceRequest('/' + activeWs + '/campaigns/create', 'POST', {
-        name,
-        channel,
-        budget: budgetVal ? `$${parseFloat(budgetVal).toFixed(2)}/day` : '$50.00/day',
-        status,
-        bidding_strategy,
-        target_location,
-      });
-
-      toast(`Campaign "${res.campaign.name}" created and launched!`, 'success');
-      closeCreateCampaignModal();
-      await loadWorkspaceCampaigns(activeWs);
-      await loadCampaigns(activeWs, currentManage);
-      showView('campaigns');
-    } catch (e) {
-      toast(e.message, 'error');
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Create Campaign';
-      }
-    }
+    wizardState.campaignName = name;
+    renderWizardStep(4);
   };
+
+  // Step 4 buttons
+  if ($('wizard-step-4-back')) $('wizard-step-4-back').onclick = () => renderWizardStep(3);
+  if ($('wizard-step-4-next')) $('wizard-step-4-next').onclick = () => {
+    const budgetVal = $('wizard-budget-input') ? $('wizard-budget-input').value.trim() : '';
+    const num = parseFloat(budgetVal);
+    if (isNaN(num) || num <= 0) {
+      toast('Please enter a valid daily budget greater than $0.', 'error');
+      if ($('wizard-budget-input')) $('wizard-budget-input').focus();
+      return;
+    }
+    wizardState.budget = num.toFixed(2);
+    renderWizardStep(5);
+  };
+
+  // Step 5 buttons
+  if ($('wizard-step-5-back')) $('wizard-step-5-back').onclick = () => renderWizardStep(4);
+  if ($('wizard-publish-btn')) $('wizard-publish-btn').onclick = submitWizardCampaign;
+
+  // Header cancel & breadcrumb
+  if ($('wizard-breadcrumb-campaigns')) $('wizard-breadcrumb-campaigns').onclick = (e) => {
+    e.preventDefault();
+    showView('campaigns');
+  };
+  if ($('wizard-cancel-btn-top')) $('wizard-cancel-btn-top').onclick = () => showView('campaigns');
 }
+
+async function submitWizardCampaign() {
+  const btn = $('wizard-publish-btn');
+  const name = $('wizard-campaign-name') ? $('wizard-campaign-name').value.trim() : wizardState.campaignName;
+  const budgetVal = $('wizard-budget-input') ? $('wizard-budget-input').value.trim() : wizardState.budget;
+  const biddingStrategy = $('wizard-bidding-focus') ? $('wizard-bidding-focus').value : 'Maximise conversions';
+  const targetLocation = $('wizard-location-select') ? $('wizard-location-select').value : 'Global / All Countries';
+  const status = $('wizard-status-select') ? $('wizard-status-select').value : 'ENABLED';
+
+  const reachItems = [];
+  let websiteUrl = '';
+  let phoneNumber = '';
+  if ($('wizard-reach-website') && $('wizard-reach-website').checked) {
+    websiteUrl = $('wizard-website-url') ? $('wizard-website-url').value.trim() : '';
+    reachItems.push('Website visits');
+  }
+  if ($('wizard-reach-phone') && $('wizard-reach-phone').checked) {
+    phoneNumber = $('wizard-phone-number') ? $('wizard-phone-number').value.trim() : '';
+    reachItems.push('Phone calls');
+  }
+  if ($('wizard-reach-shop') && $('wizard-reach-shop').checked) {
+    reachItems.push('Shop visits');
+  }
+
+  const optNew = $('wizard-opt-new-customers') ? $('wizard-opt-new-customers').checked : false;
+  const optRet = $('wizard-opt-retention') ? $('wizard-opt-retention').checked : false;
+
+  if (!name) {
+    toast('Campaign name is required.', 'error');
+    renderWizardStep(3);
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Publishing…';
+  }
+
+  try {
+    const res = await workspaceRequest('/' + activeWs + '/campaigns/create', 'POST', {
+      name,
+      channel: wizardState.channel || 'Search',
+      budget: budgetVal ? `$${parseFloat(budgetVal).toFixed(2)}/day` : '$50.00/day',
+      status,
+      bidding_strategy: biddingStrategy,
+      target_location: targetLocation,
+      objective: wizardState.objective || 'Sales',
+      conversion_goals: 'Purchases, Phone call leads',
+      ways_to_reach: reachItems.join(', ') || 'Website visits',
+      website_url: websiteUrl,
+      phone_number: phoneNumber,
+      optimize_new_customers: optNew,
+      reengage_lapsed_customers: optRet,
+    });
+
+    toast(`Campaign "${res.campaign.name}" created and published!`, 'success');
+    await loadWorkspaceCampaigns(activeWs);
+    await loadCampaigns(activeWs, currentManage);
+    showView('campaigns');
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Publish Campaign';
+    }
+  }
+}
+
+if ($('create-campaign-open-btn')) $('create-campaign-open-btn').onclick = openCreateCampaignWizard;
+if ($('table-create-campaign-btn')) $('table-create-campaign-btn').onclick = openCreateCampaignWizard;
+if ($('empty-create-campaign-btn')) $('empty-create-campaign-btn').onclick = openCreateCampaignWizard;
 
 /* ── Boot ────────────────────────────────────────── */
 async function loadWorkspacesOnBoot() {
