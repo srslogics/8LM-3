@@ -7,7 +7,9 @@
     "build": "node scripts/build.js",
     "migrate": "node scripts/migrate.js",
     "test": "node test/login-ui.cjs",
-    "test:neon": "node test/neon-e2e.js"
+    "test:neon": "node test/neon-e2e.js",
+    "test:google": "node test/google-publishing.js",
+    "test:google-ui": "node test/google-ui.cjs"
   },
   "keywords": [],
   "author": "",
@@ -25,5 +27,8 @@
   "type": "module",
   "engines": {
     "node": ">=22.20.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
   }
 }

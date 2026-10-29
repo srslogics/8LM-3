@@ -1,446 +1,490 @@
-import { readFileSync, readdirSync } from "node:fs";
-
-// Google Ads API v18 Integration Service (MCC Manager Linking)
-
-let cachedToken = null;
-let tokenExpiresAt = 0;
-
-/**
- * Helper: Extract Google OAuth Client ID and Secret from:
- * 1. Environment variables GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
- * 2. Full JSON string in GOOGLE_CREDENTIALS_JSON
- * 3. Any downloaded client_secret_*.json file in project root
- */
+const API = "https://googleads.googleapis.com/v26";
+export class GoogleError extends Error {
+  constructor(message, status = 400, uncertain = false) {
+    super(message);
+    this.status = status;
+    this.uncertain = uncertain;
+  }
+}
 export function getGoogleOAuthCredentials() {
-  let clientId = (process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ADS_CLIENT_ID || "").trim();
-  let clientSecret = (process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_ADS_CLIENT_SECRET || "").trim();
-  if (clientId && clientSecret) return { clientId, clientSecret };
-
-  // Check if entire downloaded JSON was pasted into GOOGLE_CREDENTIALS_JSON
-  if (process.env.GOOGLE_CREDENTIALS_JSON) {
-    try {
-      const parsed = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
-      const conf = parsed.web || parsed.installed || parsed;
-      if (conf.client_id && conf.client_secret) {
-        return { clientId: conf.client_id.trim(), clientSecret: conf.client_secret.trim() };
-      }
-    } catch {}
-  }
-
-  // Check if user downloaded client_secret_*.json into workspace
+  return {
+    clientId: (
+      process.env.GOOGLE_CLIENT_ID ||
+      process.env.GOOGLE_ADS_CLIENT_ID ||
+      ""
+    ).trim(),
+    clientSecret: (
+      process.env.GOOGLE_CLIENT_SECRET ||
+      process.env.GOOGLE_ADS_CLIENT_SECRET ||
+      ""
+    ).trim(),
+  };
+}
+export function isGoogleOAuthReady() {
+  const c = getGoogleOAuthCredentials();
+  return Boolean(c.clientId && c.clientSecret);
+}
+export function getGoogleAdsDeveloperToken() {
+  return (process.env.GOOGLE_ADS_DEVELOPER_TOKEN || "").trim();
+}
+async function jsonFetch(url, options = {}, mutation = false) {
+  let response;
   try {
-    const files = readdirSync(".");
-    const jsonFile = files.find(f => f.startsWith("client_secret") && f.endsWith(".json")) ||
-                     files.find(f => f === "google-credentials.json");
-    if (jsonFile) {
-      const parsed = JSON.parse(readFileSync(jsonFile, "utf8"));
-      const conf = parsed.web || parsed.installed || parsed;
-      if (conf.client_id && conf.client_secret) {
-        return { clientId: conf.client_id.trim(), clientSecret: conf.client_secret.trim() };
-      }
-    }
-  } catch {}
-
-  return { clientId: "", clientSecret: "" };
-}
-
-/**
- * Check if all required Google Ads API environment variables are set.
- */
-export function isGoogleAdsConfigured() {
-  return Boolean(
-    process.env.GOOGLE_ADS_MANAGER_ID &&
-    process.env.GOOGLE_ADS_DEVELOPER_TOKEN &&
-    process.env.GOOGLE_ADS_CLIENT_ID &&
-    process.env.GOOGLE_ADS_CLIENT_SECRET &&
-    process.env.GOOGLE_ADS_REFRESH_TOKEN
-  );
-}
-
-/**
- * List which Google Ads API environment variables are missing.
- */
-export function getMissingGoogleAdsConfig() {
-  const missing = [];
-  if (!process.env.GOOGLE_ADS_MANAGER_ID) missing.push("GOOGLE_ADS_MANAGER_ID");
-  if (!process.env.GOOGLE_ADS_DEVELOPER_TOKEN) missing.push("GOOGLE_ADS_DEVELOPER_TOKEN");
-  if (!process.env.GOOGLE_ADS_CLIENT_ID) missing.push("GOOGLE_ADS_CLIENT_ID");
-  if (!process.env.GOOGLE_ADS_CLIENT_SECRET) missing.push("GOOGLE_ADS_CLIENT_SECRET");
-  if (!process.env.GOOGLE_ADS_REFRESH_TOKEN) missing.push("GOOGLE_ADS_REFRESH_TOKEN");
-  return missing;
-}
-
-/**
- * Obtain a fresh OAuth 2.0 access token using the manager refresh token.
- */
-async function getAccessToken() {
-  if (cachedToken && Date.now() < tokenExpiresAt - 60000) {
-    return cachedToken;
-  }
-
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: process.env.GOOGLE_ADS_CLIENT_ID.trim(),
-      client_secret: process.env.GOOGLE_ADS_CLIENT_SECRET.trim(),
-      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN.trim(),
-      grant_type: "refresh_token",
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok || !data.access_token) {
-    const desc = data.error_description || data.error || "Failed to obtain Google Ads access token";
-    throw new Error(`OAuth token error: ${desc}`);
-  }
-
-  cachedToken = data.access_token;
-  tokenExpiresAt = Date.now() + (Number(data.expires_in) || 3600) * 1000;
-  return cachedToken;
-}
-
-/**
- * Dispatch an MCC link invitation to a client customer account via Google Ads API.
- * Uses CustomerClientLinkService.mutateCustomerClientLink
- */
-export async function sendManagerLinkInvitation(clientCustomerId) {
-  if (!isGoogleAdsConfigured()) {
-    const missing = getMissingGoogleAdsConfig();
-    throw new Error(
-      `Google Ads API credentials not configured on server. Missing: ${missing.join(", ")}`
+    response = await fetch(url, {
+      ...options,
+      signal: AbortSignal.timeout(25000),
+    });
+  } catch {
+    throw new GoogleError(
+      mutation
+        ? "Google’s response was interrupted. Check publication status before trying again."
+        : "Google could not be reached. Try again.",
+      502,
+      mutation,
     );
   }
-
-  const managerId = process.env.GOOGLE_ADS_MANAGER_ID.replace(/-/g, "").trim();
-  const cleanClientId = clientCustomerId.replace(/-/g, "").trim();
-  const token = await getAccessToken();
-
-  const url = `https://googleads.googleapis.com/v26/customers/${managerId}/customerClientLinks:mutate`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "developer-token": process.env.GOOGLE_ADS_DEVELOPER_TOKEN.trim(),
-      "Authorization": `Bearer ${token}`,
-      "login-customer-id": managerId,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      operation: {
-        create: {
-          clientCustomer: `customers/${cleanClientId}`,
-          status: "PENDING",
-        },
-      },
-    }),
-  });
-
-  const result = await res.json();
-  if (!res.ok) {
-    const msg =
-      result.error?.message ||
-      result.error?.details?.[0]?.errors?.[0]?.message ||
-      JSON.stringify(result.error || result);
-    throw new Error(`Google Ads API rejected link: ${msg}`);
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new GoogleError(
+      "Google returned an unreadable response.",
+      502,
+      mutation,
+    );
   }
-
-  return {
-    ok: true,
-    resourceName: result.result?.resourceName || "",
-  };
-}
-
-/**
- * Query Google Ads API to verify whether the client has accepted the link invitation.
- */
-export async function checkManagerLinkStatus(clientCustomerId) {
-  if (!isGoogleAdsConfigured()) {
-    return { ok: false, configured: false };
-  }
-
-  const managerId = process.env.GOOGLE_ADS_MANAGER_ID.replace(/-/g, "").trim();
-  const cleanClientId = clientCustomerId.replace(/-/g, "").trim();
-  const token = await getAccessToken();
-
-  const url = `https://googleads.googleapis.com/v26/customers/${managerId}/googleAds:search`;
-  const query = `
-    SELECT
-      customer_client_link.resource_name,
-      customer_client_link.client_customer,
-      customer_client_link.status
-    FROM customer_client_link
-    WHERE customer_client_link.client_customer = 'customers/${cleanClientId}'
-  `;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "developer-token": process.env.GOOGLE_ADS_DEVELOPER_TOKEN.trim(),
-      "Authorization": `Bearer ${token}`,
-      "login-customer-id": managerId,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ query }),
-  });
-
-  const result = await res.json();
-  if (!res.ok) {
-    const msg = result.error?.message || "Failed to query Google Ads API status";
-    throw new Error(`Google Ads API status error: ${msg}`);
-  }
-
-  const row = result.results?.[0]?.customerClientLink;
-  if (!row) {
-    return { ok: true, status: "NOT_FOUND" };
-  }
-
-  return {
-    ok: true,
-    status: row.status, // e.g. "ACTIVE", "PENDING", "INACTIVE", "CANCELLED"
-    resourceName: row.resourceName,
-  };
-}
-
-/* ══════════════════════════════════════════════════
-   GOOGLE DEVELOPERS OAUTH 2.0 (Google Ads & Campaign 360)
-   ══════════════════════════════════════════════════ */
-
-/**
- * Check if Google OAuth 2.0 credentials are set on server.
- */
-export function isGoogleOAuthReady() {
-  const { clientId, clientSecret } = getGoogleOAuthCredentials();
-  return Boolean(clientId && clientSecret);
-}
-
-/**
- * Generate Google OAuth 2.0 Authorization URL for Google Ads & Campaign Manager 360.
- */
-export function getGoogleOAuthUrl(workspaceId, origin) {
-  const { clientId } = getGoogleOAuthCredentials();
-  const redirectUri = `${origin}/api/auth/google/callback`;
-  const scopes = [
-    "openid",
-    "email",
-    "profile",
-    "https://www.googleapis.com/auth/adwords",
-    "https://www.googleapis.com/auth/dfareporting",
-    "https://www.googleapis.com/auth/dfatrafficking",
-  ].join(" ");
-
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    response_type: "code",
-    scope: scopes,
-    access_type: "offline",
-    prompt: "consent",
-    state: String(workspaceId),
-  });
-
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-}
-
-/**
- * Exchange OAuth authorization code for access & refresh tokens.
- */
-export async function exchangeOAuthCode(code, origin) {
-  const { clientId, clientSecret } = getGoogleOAuthCredentials();
-  const redirectUri = `${origin}/api/auth/google/callback`;
-
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code: code.trim(),
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
-      grant_type: "authorization_code",
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok || !data.access_token) {
-    const desc = data.error_description || data.error || "Failed to exchange authorization code";
-    throw new Error(`Google OAuth error: ${desc}`);
+  if (!response.ok) {
+    const errors = data.error?.details?.flatMap((d) => d.errors || []) || [];
+    const message =
+      errors.map((e) => e.message).join(" ") ||
+      data.error_description ||
+      data.error?.message ||
+      "Google rejected this request. Reconnect your Google account if authorization expired.";
+    throw new GoogleError(
+      String(message).slice(0, 1800),
+      response.status === 401 ? 401 : 400,
+      mutation && response.status >= 500,
+    );
   }
   return data;
 }
-
-/**
- * Fetch authenticated Google user profile.
- */
-export async function getGoogleProfile(accessToken) {
-  try {
-    const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) return { email: "ad-manager@gmail.com", name: "Google Advertiser" };
-    return await res.json();
-  } catch {
-    return { email: "ad-manager@gmail.com", name: "Google Advertiser" };
-  }
+export function getGoogleOAuthUrl(state, challenge, origin) {
+  const params = new URLSearchParams({
+    client_id: getGoogleOAuthCredentials().clientId,
+    redirect_uri: origin + "/api/auth/google/callback",
+    response_type: "code",
+    scope: "openid email https://www.googleapis.com/auth/adwords",
+    access_type: "offline",
+    prompt: "consent",
+    state,
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+  });
+  return "https://accounts.google.com/o/oauth2/v2/auth?" + params;
 }
-
-/**
- * Fetch Campaign Manager 360 User Profiles for the authenticated user.
- */
-export async function getCM360Profiles(accessToken) {
-  try {
-    const res = await fetch("https://dfareporting.googleapis.com/dfareporting/v4/userprofiles", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) {
-      console.warn("CM360 userprofiles response status:", res.status);
-      return [];
-    }
-    const data = await res.json();
-    return data.items || [];
-  } catch (err) {
-    console.error("Failed to fetch CM360 user profiles:", err);
-    return [];
-  }
+export async function exchangeOAuthCode(code, verifier, origin) {
+  const { clientId, clientSecret } = getGoogleOAuthCredentials();
+  return jsonFetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    body: new URLSearchParams({
+      code,
+      code_verifier: verifier,
+      redirect_uri: origin + "/api/auth/google/callback",
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "authorization_code",
+    }),
+  });
 }
-
-/**
- * Fetch Campaign Manager 360 live campaigns from Google's dfareporting API.
- */
-export async function getCM360Campaigns(accessToken, profileId) {
-  try {
-    const url = `https://dfareporting.googleapis.com/dfareporting/v4/userprofiles/${profileId}/campaigns?archived=false&sortField=NAME`;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) {
-      console.warn("CM360 campaigns response status:", res.status);
-      return [];
-    }
-    const data = await res.json();
-    return (data.campaigns || []).map(c => ({
-      id: String(c.id),
-      name: c.name,
-      channel: "Display",
-      status: c.archived ? "PAUSED" : "ENABLED",
-      budget: "$150.00/day",
-      imported: false,
-    }));
-  } catch (err) {
-    console.error("Failed to fetch CM360 campaigns:", err);
-    return [];
-  }
+export async function refreshGoogleToken(refreshToken) {
+  const { clientId, clientSecret } = getGoogleOAuthCredentials();
+  return jsonFetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    body: new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "refresh_token",
+    }),
+  });
 }
-
-/**
- * Get server-configured Google Ads Developer Token.
- */
-export function getGoogleAdsDeveloperToken() {
-  return (process.env.GOOGLE_ADS_DEVELOPER_TOKEN || process.env.DEVELOPER_TOKEN || "").trim();
+export async function getGoogleProfile(token) {
+  const data = await jsonFetch(
+    "https://www.googleapis.com/oauth2/v3/userinfo",
+    { headers: { Authorization: "Bearer " + token } },
+  );
+  if (!data.sub || !data.email || !data.email_verified)
+    throw new GoogleError("Google did not return a verified account email.");
+  return data;
 }
-
-/**
- * List all Google Ads Customer IDs accessible by the authenticated user.
- * Requires GOOGLE_ADS_DEVELOPER_TOKEN from an MCC account.
- */
-export async function listAccessibleGoogleAdsCustomers(accessToken) {
-  const devToken = getGoogleAdsDeveloperToken();
-  if (!devToken) return { ok: false, error: "Missing GOOGLE_ADS_DEVELOPER_TOKEN on server." };
-  if (!accessToken) return { ok: false, error: "Missing Google OAuth access token." };
-
-  try {
-    const res = await fetch("https://googleads.googleapis.com/v26/customers:listAccessibleCustomers", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "developer-token": devToken,
-      },
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const msg = data.error?.message || data.error?.details?.[0]?.errors?.[0]?.message || `HTTP ${res.status}`;
-      return { ok: false, status: res.status, error: msg, details: data.error };
-    }
-
-    const customerIds = (data.resourceNames || []).map(r => r.replace("customers/", ""));
-    return { ok: true, customerIds };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
-}
-
-/**
- * Query live Google Ads campaigns (Search, PMax, Display, Video) for a customer account.
- */
-export async function fetchGoogleAdsCampaigns(accessToken, customerId, managerId = null) {
-  const devToken = getGoogleAdsDeveloperToken();
-  if (!devToken) return { ok: false, error: "Missing GOOGLE_ADS_DEVELOPER_TOKEN on server." };
-  if (!accessToken || !customerId) return { ok: false, error: "Missing parameters for Google Ads search." };
-
-  const cleanId = customerId.replace(/-/g, "").trim();
-
-  const parseResults = (data) => {
-    const formatChannel = (type) => {
-      const s = String(type || "").toUpperCase();
-      if (s.includes("SEARCH")) return "Search";
-      if (s.includes("PERFORMANCE_MAX")) return "Performance Max";
-      if (s.includes("DISPLAY")) return "Display";
-      if (s.includes("VIDEO")) return "Video";
-      if (s.includes("SHOPPING")) return "Shopping";
-      return type || "Search";
-    };
-
-    const campaigns = (data.results || []).map(r => ({
-      id: String(r.campaign.id),
-      name: r.campaign.name || `Campaign ${r.campaign.id}`,
-      channel: formatChannel(r.campaign.advertisingChannelType),
-      status: r.campaign.status === "ENABLED" ? "ENABLED" : "PAUSED",
-      budget: r.campaignBudget?.amountMicros
-        ? `$${(Number(r.campaignBudget.amountMicros) / 1000000).toFixed(2)}/day`
-        : "$0.00/day",
-      imported: false,
-    }));
-
-    return { ok: true, campaigns };
+export async function adsRequest(
+  token,
+  customerId,
+  method,
+  body,
+  managerId,
+  mutation = false,
+) {
+  if (!getGoogleAdsDeveloperToken())
+    throw new GoogleError(
+      "GOOGLE_ADS_DEVELOPER_TOKEN is not configured on the server.",
+    );
+  const headers = {
+    Authorization: "Bearer " + token,
+    "developer-token": getGoogleAdsDeveloperToken(),
+    "Content-Type": "application/json",
   };
-
-  const query = "SELECT campaign.id, campaign.name, campaign.advertising_channel_type, campaign.status, campaign_budget.amount_micros FROM campaign ORDER BY campaign.id DESC LIMIT 50";
-
-  // Try 1: Call without login-customer-id (direct client ownership)
-  try {
-    const headers = {
-      Authorization: `Bearer ${accessToken}`,
-      "developer-token": devToken,
-      "Content-Type": "application/json",
-    };
-    if (managerId) headers["login-customer-id"] = managerId.replace(/-/g, "").trim();
-
-    let res = await fetch(`https://googleads.googleapis.com/v26/customers/${cleanId}/googleAds:search`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ query }),
-    });
-
-    let data = await res.json().catch(() => ({}));
-
-    // If failed and no login-customer-id was set, try setting login-customer-id = cleanId
-    if (!res.ok && !headers["login-customer-id"]) {
-      headers["login-customer-id"] = cleanId;
-      res = await fetch(`https://googleads.googleapis.com/v26/customers/${cleanId}/googleAds:search`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ query }),
-      });
-      data = await res.json().catch(() => ({}));
+  if (managerId) headers["login-customer-id"] = managerId;
+  return jsonFetch(
+    `${API}/customers/${customerId}/${method}`,
+    { method: "POST", headers, body: JSON.stringify(body) },
+    mutation,
+  );
+}
+export async function searchAds(token, id, query, managerId) {
+  const rows = [];
+  let pageToken;
+  do {
+    const result = await adsRequest(
+      token,
+      id,
+      "googleAds:search",
+      { query, ...(pageToken ? { pageToken } : {}) },
+      managerId,
+    );
+    rows.push(...(result.results || []));
+    pageToken = result.nextPageToken;
+  } while (pageToken);
+  return rows;
+}
+export async function listAccounts(token) {
+  if (!getGoogleAdsDeveloperToken())
+    throw new GoogleError(
+      "GOOGLE_ADS_DEVELOPER_TOKEN is not configured on the server.",
+    );
+  const result = await jsonFetch(`${API}/customers:listAccessibleCustomers`, {
+    headers: {
+      Authorization: "Bearer " + token,
+      "developer-token": getGoogleAdsDeveloperToken(),
+    },
+  });
+  const accounts = new Map();
+  const notices = [];
+  for (const resource of result.resourceNames || []) {
+    const id = resource.split("/").pop();
+    try {
+      const rows = await searchAds(
+        token,
+        id,
+        "SELECT customer.id, customer.descriptive_name, customer.currency_code, customer.manager FROM customer LIMIT 1",
+      );
+      const c = rows[0]?.customer;
+      if (!c) continue;
+      if (!c.manager)
+        accounts.set(String(c.id), {
+          id: String(c.id),
+          name: c.descriptiveName || String(c.id),
+          currency: c.currencyCode,
+          managerId: null,
+        });
+      else {
+        const children = await searchAds(
+          token,
+          id,
+          "SELECT customer_client.id, customer_client.descriptive_name, customer_client.currency_code, customer_client.manager FROM customer_client WHERE customer_client.manager = FALSE",
+          id,
+        );
+        for (const row of children) {
+          const child = row.customerClient;
+          const key = String(child.id);
+          if (!accounts.has(key))
+            accounts.set(key, {
+              id: key,
+              name: child.descriptiveName || key,
+              currency: child.currencyCode,
+              managerId: id,
+            });
+        }
+      }
+    } catch (error) {
+      notices.push(`Account ${id}: ${error.message}`);
     }
-
-    if (!res.ok) {
-      const msg = data.error?.message || data.error?.details?.[0]?.errors?.[0]?.message || `HTTP ${res.status}`;
-      return { ok: false, status: res.status, error: msg, details: data.error };
-    }
-
-    return parseResults(data);
-  } catch (err) {
-    return { ok: false, error: err.message };
   }
+  return { accounts: [...accounts.values()], notices };
+}
+export async function accountDetails(token, id, managerId) {
+  if (!/^\d{10}$/.test(id))
+    throw new GoogleError("Select a valid 10-digit Google Ads account.");
+  const rows = await searchAds(
+    token,
+    id,
+    "SELECT customer.id, customer.descriptive_name, customer.currency_code, customer.manager FROM customer LIMIT 1",
+    managerId,
+  );
+  const c = rows[0]?.customer;
+  if (!c || c.manager)
+    throw new GoogleError(
+      "Select an advertising account, not a manager account.",
+    );
+  return {
+    id: String(c.id),
+    name: c.descriptiveName || String(c.id),
+    currency: c.currencyCode,
+    managerId,
+  };
+}
+export async function fetchCampaigns(token, id, managerId) {
+  const rows = await searchAds(
+    token,
+    id,
+    "SELECT campaign.id, campaign.resource_name, campaign.name, campaign.advertising_channel_type, campaign.status, campaign_budget.amount_micros FROM campaign WHERE campaign.status != 'REMOVED' ORDER BY campaign.id DESC",
+    managerId,
+  );
+  return rows.map(({ campaign: c, campaignBudget: b }) => ({
+    id: String(c.id),
+    resource: c.resourceName,
+    name: c.name,
+    channel: c.advertisingChannelType,
+    status: c.status,
+    budget: Number(b?.amountMicros || 0) / 1e6,
+  }));
+}
+export async function campaignMetrics(token, id, managerId) {
+  const rows = await searchAds(
+    token,
+    id,
+    "SELECT metrics.impressions, metrics.clicks, metrics.cost_micros FROM customer WHERE segments.date DURING LAST_30_DAYS",
+    managerId,
+  );
+  return rows.reduce(
+    (a, r) => ({
+      impressions: a.impressions + Number(r.metrics?.impressions || 0),
+      clicks: a.clicks + Number(r.metrics?.clicks || 0),
+      spend: a.spend + Number(r.metrics?.costMicros || 0) / 1e6,
+    }),
+    { impressions: 0, clicks: 0, spend: 0 },
+  );
+}
+export function validateCampaign(input) {
+  const text = (value, label, max) => {
+    if (typeof value !== "string" || !value.trim() || value.trim().length > max)
+      throw new GoogleError(
+        `${label} is required (maximum ${max} characters).`,
+      );
+    return value.trim();
+  };
+  const name = text(input.name, "Campaign name", 100),
+    adGroup = text(input.ad_group, "Ad group name", 100);
+  if (input.channel !== "Search")
+    throw new GoogleError(
+      "Only Search campaigns are supported for publishing.",
+    );
+  const budget = Number(input.budget),
+    cpc = Number(input.cpc);
+  if (
+    !Number.isFinite(budget) ||
+    budget <= 0 ||
+    budget > 1000000 ||
+    !Number.isFinite(cpc) ||
+    cpc <= 0 ||
+    cpc > budget
+  )
+    throw new GoogleError(
+      "Enter a positive daily budget and a maximum CPC no greater than the daily budget.",
+    );
+  let url;
+  try {
+    url = new URL(input.final_url);
+  } catch {
+    throw new GoogleError("Enter a valid HTTPS landing page URL.");
+  }
+  if (url.protocol !== "https:" || url.username || url.password)
+    throw new GoogleError(
+      "Use an HTTPS landing page without embedded credentials.",
+    );
+  const lines = (value, label, min, max, length) => {
+    if (typeof value !== "string")
+      throw new GoogleError(`${label} must be one per line.`);
+    const rows = value
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (
+      rows.length < min ||
+      rows.length > max ||
+      rows.some((s) => s.length > length) ||
+      new Set(rows).size !== rows.length
+    )
+      throw new GoogleError(
+        `${label}: use ${min}–${max} unique lines, each at most ${length} characters.`,
+      );
+    return rows;
+  };
+  const headlines = lines(input.headlines, "Headlines", 3, 15, 30),
+    descriptions = lines(input.descriptions, "Descriptions", 2, 4, 90),
+    keywords = lines(input.keywords, "Keywords", 1, 100, 80);
+  if (!["PHRASE", "EXACT"].includes(input.match_type))
+    throw new GoogleError("Choose phrase or exact match.");
+  const countries = {
+    India: "2356",
+    "United States": "2840",
+    "United Kingdom": "2826",
+  };
+  if (!countries[input.country])
+    throw new GoogleError("Choose a supported target country.");
+  if (input.eu_political !== false)
+    throw new GoogleError(
+      "Confirm this campaign does not contain EU political advertising.",
+    );
+  return {
+    name,
+    ad_group: adGroup,
+    channel: "Search",
+    budget,
+    cpc,
+    final_url: url.href,
+    headlines,
+    descriptions,
+    keywords,
+    match_type: input.match_type,
+    country: input.country,
+    geo_id: countries[input.country],
+    eu_political: false,
+  };
+}
+export function campaignOperations(customerId, payload, publicationId) {
+  const base = `customers/${customerId}`,
+    budget = base + "/campaignBudgets/-1",
+    campaign = base + "/campaigns/-2",
+    adGroup = base + "/adGroups/-3";
+  return [
+    {
+      campaignBudgetOperation: {
+        create: {
+          resourceName: budget,
+          name: `8LM budget ${publicationId}`,
+          amountMicros: String(Math.round(payload.budget * 1e6)),
+          deliveryMethod: "STANDARD",
+          explicitlyShared: false,
+        },
+      },
+    },
+    {
+      campaignOperation: {
+        create: {
+          resourceName: campaign,
+          name: `${payload.name} [8LM ${publicationId}]`,
+          advertisingChannelType: "SEARCH",
+          status: "PAUSED",
+          campaignBudget: budget,
+          manualCpc: {},
+          containsEuPoliticalAdvertising:
+            "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING",
+          networkSettings: {
+            targetGoogleSearch: true,
+            targetSearchNetwork: false,
+            targetContentNetwork: false,
+            targetPartnerSearchNetwork: false,
+          },
+          geoTargetTypeSetting: { positiveGeoTargetType: "PRESENCE" },
+        },
+      },
+    },
+    {
+      campaignCriterionOperation: {
+        create: {
+          campaign,
+          location: {
+            geoTargetConstant: "geoTargetConstants/" + payload.geo_id,
+          },
+        },
+      },
+    },
+    {
+      adGroupOperation: {
+        create: {
+          resourceName: adGroup,
+          name: payload.ad_group,
+          campaign,
+          type: "SEARCH_STANDARD",
+          status: "ENABLED",
+          cpcBidMicros: String(Math.round(payload.cpc * 1e6)),
+        },
+      },
+    },
+    ...payload.keywords.map((text) => ({
+      adGroupCriterionOperation: {
+        create: {
+          adGroup,
+          status: "ENABLED",
+          keyword: { text, matchType: payload.match_type },
+        },
+      },
+    })),
+    {
+      adGroupAdOperation: {
+        create: {
+          adGroup,
+          status: "ENABLED",
+          ad: {
+            finalUrls: [payload.final_url],
+            responsiveSearchAd: {
+              headlines: payload.headlines.map((text) => ({ text })),
+              descriptions: payload.descriptions.map((text) => ({ text })),
+            },
+          },
+        },
+      },
+    },
+  ];
+}
+export async function publishCampaign(
+  token,
+  id,
+  payload,
+  publicationId,
+  managerId,
+  validateOnly = false,
+) {
+  return adsRequest(
+    token,
+    id,
+    "googleAds:mutate",
+    {
+      mutateOperations: campaignOperations(id, payload, publicationId),
+      partialFailure: false,
+      validateOnly,
+    },
+    managerId,
+    !validateOnly,
+  );
+}
+export async function findPublication(token, id, publicationId, managerId) {
+  const rows = await searchAds(
+    token,
+    id,
+    `SELECT campaign.id, campaign.resource_name FROM campaign WHERE campaign.name LIKE '%${publicationId}%'`,
+    managerId,
+  );
+  return rows[0]?.campaign?.resourceName;
+}
+export async function updateCampaignStatus(
+  token,
+  id,
+  resource,
+  status,
+  managerId,
+) {
+  return adsRequest(
+    token,
+    id,
+    "campaigns:mutate",
+    {
+      operations: [
+        { update: { resourceName: resource, status }, updateMask: "status" },
+      ],
+    },
+    managerId,
+    true,
+  );
 }

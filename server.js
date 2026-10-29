@@ -23,7 +23,7 @@ app.use(
     },
   }),
 );
-app.use(express.json({ limit: "4kb" }));
+app.use(express.json({ limit: "64kb" }));
 app.use("/api", (_req, res, next) => {
   res.set("Cache-Control", "no-store");
   next();

@@ -18,6 +18,18 @@ pool.on("error", (error) =>
 const context = new AsyncLocalStorage();
 const query = (sql, values) => (context.getStore() || pool).query(sql, values);
 export const db = {
+  independent: async (sql, ...values) => {
+    const client = new pg.Client({
+      connectionString: databaseUrl(process.env.DATABASE_URL),
+      connectionTimeoutMillis: 15000,
+    });
+    try {
+      await client.connect();
+      return await client.query(sql, values);
+    } finally {
+      await client.end();
+    }
+  },
   get: async (sql, ...values) => (await query(sql, values)).rows[0],
   all: async (sql, ...values) => (await query(sql, values)).rows,
   run: (sql, ...values) => query(sql, values),
