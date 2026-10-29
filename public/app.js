@@ -1162,14 +1162,14 @@ let wizardState = {
   maxStepReached: 1,
   objective: 'Sales',
   channel: 'Search',
-  campaignName: 'Sales-Search-1',
-  reachWebsite: true,
-  websiteUrl: 'https://srslogics.com',
+  campaignName: '',
+  reachWebsite: false,
+  websiteUrl: '',
   reachPhone: false,
   phoneNumber: '',
   reachShop: false,
   biddingStrategy: 'Maximise conversions',
-  targetCpa: '12.00',
+  targetCpa: '',
   optimizeNewCustomers: false,
   reengageLapsedCustomers: false,
   networkSearch: true,
@@ -1178,24 +1178,15 @@ let wizardState = {
   customLocation: '',
   language: 'English',
   adGroupName: 'Ad group 1',
-  keywords: 'digital marketing agency\n"google ads management"\n[ppc campaign services]\nenterprise marketing analytics\nroi driven ad management',
-  finalUrl: 'https://srslogics.com',
-  displayPath1: 'services',
-  displayPath2: 'ads',
-  headlines: [
-    'Scale Your Business Online',
-    'Top Google Ads Performance',
-    '8LM Marketing Intelligence',
-    'Maximize Conversion ROI',
-    'Get Free Growth Audit Today'
-  ],
-  descriptions: [
-    'Maximize leads and revenue with verified Google Ads tracking, real-time KPI metrics & insights.',
-    'Trusted by high-growth companies. Set up in minutes and turn clicks into loyal customers.'
-  ],
-  sitelinks: ['Pricing & Plans', 'Case Studies', 'Schedule a Demo', 'Contact Support'],
-  callouts: ['Verified Google Partner', 'Real-Time Attribution', 'No Setup Fees', '24/7 Priority Support'],
-  assetPhone: '+1 (820) 330-9235',
+  keywords: '',
+  finalUrl: '',
+  displayPath1: '',
+  displayPath2: '',
+  headlines: [],
+  descriptions: [],
+  sitelinks: [],
+  callouts: [],
+  assetPhone: '',
   budget: '50.00',
   status: 'ENABLED',
 };
@@ -1217,22 +1208,62 @@ function openCreateCampaignWizard() {
   wizardState.maxStepReached = 1;
   wizardState.objective = 'Sales';
   wizardState.channel = 'Search';
-  wizardState.campaignName = 'Sales-Search-1';
+  wizardState.campaignName = '';
   wizardState.budget = '50.00';
   wizardState.targetLocation = 'India';
   wizardState.status = 'ENABLED';
+  wizardState.websiteUrl = '';
+  wizardState.phoneNumber = '';
+  wizardState.targetCpa = '';
+  wizardState.keywords = '';
+  wizardState.finalUrl = '';
+  wizardState.displayPath1 = '';
+  wizardState.displayPath2 = '';
+  wizardState.headlines = [];
+  wizardState.descriptions = [];
+  wizardState.sitelinks = [];
+  wizardState.callouts = [];
+  wizardState.assetPhone = '';
 
-  if ($('wizard-campaign-name')) $('wizard-campaign-name').value = 'Sales-Search-1';
+  if ($('wizard-campaign-name')) $('wizard-campaign-name').value = '';
+  if ($('wizard-website-url')) $('wizard-website-url').value = '';
+  if ($('wizard-phone-number')) $('wizard-phone-number').value = '';
   if ($('wizard-budget-input')) $('wizard-budget-input').value = '50.00';
   if ($('wizard-bidding-focus')) $('wizard-bidding-focus').value = 'Maximise conversions';
   if ($('wizard-status-select')) $('wizard-status-select').value = 'ENABLED';
-  if ($('wizard-reach-website')) $('wizard-reach-website').checked = true;
-  if ($('wizard-reach-website-box')) $('wizard-reach-website-box').hidden = false;
+  if ($('wizard-set-cpa')) $('wizard-set-cpa').checked = false;
+  if ($('wizard-cpa-val')) $('wizard-cpa-val').value = '';
+  if ($('wizard-cpa-box')) $('wizard-cpa-box').hidden = true;
+  if ($('wizard-reach-website')) $('wizard-reach-website').checked = false;
+  if ($('wizard-reach-website-box')) $('wizard-reach-website-box').hidden = true;
   if ($('wizard-reach-phone')) $('wizard-reach-phone').checked = false;
   if ($('wizard-reach-phone-box')) $('wizard-reach-phone-box').hidden = true;
   if ($('wizard-reach-shop')) $('wizard-reach-shop').checked = false;
   if ($('wizard-opt-new-customers')) $('wizard-opt-new-customers').checked = false;
   if ($('wizard-opt-retention')) $('wizard-opt-retention').checked = false;
+  if ($('wizard-kw-scan-url')) $('wizard-kw-scan-url').value = '';
+  if ($('wizard-keywords-input')) $('wizard-keywords-input').value = '';
+  if ($('rsa-final-url')) $('rsa-final-url').value = '';
+  if ($('rsa-path-1')) $('rsa-path-1').value = '';
+  if ($('rsa-path-2')) $('rsa-path-2').value = '';
+  if ($('wizard-asset-phone')) $('wizard-asset-phone').value = '';
+
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    document.querySelectorAll('.rsa-hl-input').forEach(inp => {
+      inp.value = '';
+      if (inp.parentElement && inp.parentElement.querySelector('.char-counter')) {
+        inp.parentElement.querySelector('.char-counter').textContent = '0/30';
+      }
+    });
+    document.querySelectorAll('.rsa-desc-input').forEach(inp => {
+      inp.value = '';
+      if (inp.parentElement && inp.parentElement.querySelector('.char-counter')) {
+        inp.parentElement.querySelector('.char-counter').textContent = '0/90';
+      }
+    });
+    document.querySelectorAll('.sitelink-chk').forEach(chk => { chk.checked = false; });
+    document.querySelectorAll('.callout-chk').forEach(chk => { chk.checked = false; });
+  }
 
   showView('create-campaign');
   renderWizardStep(1);
@@ -1244,7 +1275,7 @@ function updateSuggestedCampaignName() {
     const objClean = (wizardState.objective || 'Sales').replace(/\s+/g, '-');
     const chClean = (wizardState.channel || 'Search').replace(/\s+/g, '-');
     const newName = `${objClean}-${chClean}-1`;
-    if (!nameInput.value || /^[A-Za-z]+-[A-Za-z]+-1$/.test(nameInput.value.trim())) {
+    if (!nameInput.value || /^[A-Za-z]+-[A-Za-z]+-\d+$/.test(nameInput.value.trim())) {
       nameInput.value = newName;
     }
     wizardState.campaignName = nameInput.value.trim() || newName;
@@ -1321,60 +1352,113 @@ function renderWizardStep(stepNum) {
 }
 
 function updateRsaLivePreview() {
-  const finalUrl = ($('rsa-final-url') ? $('rsa-final-url').value.trim() : '') || 'https://srslogics.com';
-  const path1 = ($('rsa-path-1') ? $('rsa-path-1').value.trim() : '') || 'services';
-  const path2 = ($('rsa-path-2') ? $('rsa-path-2').value.trim() : '') || 'ads';
+  const finalUrl = ($('rsa-final-url') ? $('rsa-final-url').value.trim() : '');
+  const path1 = ($('rsa-path-1') ? $('rsa-path-1').value.trim() : '');
+  const path2 = ($('rsa-path-2') ? $('rsa-path-2').value.trim() : '');
+
+  // Update domain next to path inputs
+  let domain = 'example.com';
+  if (finalUrl) {
+    try {
+      const parsed = new URL(finalUrl.startsWith('http') ? finalUrl : 'https://' + finalUrl);
+      domain = parsed.hostname.replace(/^www\./, '');
+    } catch (e) {
+      domain = finalUrl.replace(/^https?:\/\//, '').split('/')[0] || 'example.com';
+    }
+  }
+  if ($('rsa-display-domain')) $('rsa-display-domain').textContent = domain + ' /';
 
   // Gather headlines
   const hlInputs = [];
   if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
     document.querySelectorAll('.rsa-hl-input').forEach(inp => {
-      if (inp.value.trim()) hlInputs.push(inp.value.trim());
+      if (inp.value && inp.value.trim()) hlInputs.push(inp.value.trim());
     });
   }
-  const previewHl = hlInputs.length ? hlInputs.slice(0, 3).join(' | ') : 'Scale Your Business Online | Top Google Ads Performance';
+  const previewHl = hlInputs.length ? hlInputs.slice(0, 3).join(' | ') : 'Headline 1 | Headline 2';
 
   // Gather descriptions
   const descInputs = [];
   if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
     document.querySelectorAll('.rsa-desc-input').forEach(inp => {
-      if (inp.value.trim()) descInputs.push(inp.value.trim());
+      if (inp.value && inp.value.trim()) descInputs.push(inp.value.trim());
     });
   }
-  const previewDesc = descInputs.length ? descInputs[0] : 'Maximize leads and revenue with verified Google Ads tracking, real-time KPI metrics & insights.';
+  const previewDesc = descInputs.length ? descInputs[0] : 'Your ad description will appear here as you type.';
 
-  // Update DOM mock
-  if ($('mock-preview-url')) $('mock-preview-url').textContent = `${finalUrl} › ${path1} › ${path2}`;
+  // Build display URL
+  let displayUrl = finalUrl || 'https://www.example.com';
+  if (path1) displayUrl += ` › ${path1}`;
+  if (path2) displayUrl += ` › ${path2}`;
+
+  if ($('mock-preview-url')) $('mock-preview-url').textContent = displayUrl;
   if ($('mock-preview-hl')) $('mock-preview-hl').textContent = previewHl;
   if ($('mock-preview-desc')) $('mock-preview-desc').textContent = previewDesc;
 
-  // Calculate dynamic Ad Strength
+  // Keyword check for dynamic Ad Strength
+  const kwInput = $('wizard-keywords-input') ? $('wizard-keywords-input').value.toLowerCase() : '';
+  const kwWords = kwInput.split(/[\n,\s]+/).filter(w => w.length > 3);
+  const hlCombined = hlInputs.join(' ').toLowerCase();
+  const hasKeyword = kwWords.some(w => hlCombined.includes(w));
+
+  const chkKw = $('chk-keywords');
+  const chkHl = $('chk-unique-hl');
+  const chkDesc = $('chk-desc');
+  if (chkKw) chkKw.className = (hasKeyword && hlInputs.length > 0) ? 'ad-strength-check-item done' : 'ad-strength-check-item';
+  if (chkHl) chkHl.className = (hlInputs.length >= 3) ? 'ad-strength-check-item done' : 'ad-strength-check-item';
+  if (chkDesc) chkDesc.className = (descInputs.length >= 2) ? 'ad-strength-check-item done' : 'ad-strength-check-item';
+
+  // Calculate score
   let score = 0;
+  if (hlInputs.length >= 2) score++;
   if (hlInputs.length >= 3) score++;
-  if (hlInputs.length >= 5) score++;
   if (descInputs.length >= 2) score++;
-  if (previewHl.toLowerCase().includes('ads') || previewHl.toLowerCase().includes('marketing')) score++;
+  if (hasKeyword) score++;
 
   const strengthLabel = $('rsa-strength-label');
+  const bar1 = $('str-bar-1');
+  const bar2 = $('str-bar-2');
+  const bar3 = $('str-bar-3');
+  const bar4 = $('str-bar-4');
+
+  [bar1, bar2, bar3, bar4].forEach(b => {
+    if (b) b.className = 'ad-strength-bar';
+  });
+
   if (strengthLabel) {
-    if (score >= 4) {
+    if (hlInputs.length === 0 && descInputs.length === 0) {
+      strengthLabel.textContent = 'Incomplete';
+      strengthLabel.style.color = '#5f6368';
+    } else if (score >= 4) {
       strengthLabel.textContent = 'Excellent';
       strengthLabel.style.color = '#1a73e8';
+      if (bar1) bar1.className = 'ad-strength-bar bar-exc';
+      if (bar2) bar2.className = 'ad-strength-bar bar-exc';
+      if (bar3) bar3.className = 'ad-strength-bar bar-exc';
+      if (bar4) bar4.className = 'ad-strength-bar bar-exc';
     } else if (score >= 3) {
       strengthLabel.textContent = 'Good';
       strengthLabel.style.color = '#1e8e3e';
+      if (bar1) bar1.className = 'ad-strength-bar bar-good';
+      if (bar2) bar2.className = 'ad-strength-bar bar-good';
+      if (bar3) bar3.className = 'ad-strength-bar bar-good';
     } else if (score >= 2) {
       strengthLabel.textContent = 'Average';
       strengthLabel.style.color = '#fbbc04';
+      if (bar1) bar1.className = 'ad-strength-bar bar-avg';
+      if (bar2) bar2.className = 'ad-strength-bar bar-avg';
     } else {
       strengthLabel.textContent = 'Poor';
       strengthLabel.style.color = '#ea4335';
+      if (bar1) bar1.className = 'ad-strength-bar bar-poor';
     }
   }
 
-  // Update headline counter
   if ($('rsa-headline-count')) {
     $('rsa-headline-count').textContent = `${hlInputs.length} / 15 added`;
+  }
+  if ($('rsa-desc-count')) {
+    $('rsa-desc-count').textContent = `${descInputs.length} / 4 added`;
   }
 }
 
@@ -1407,8 +1491,8 @@ function populateWizardReview() {
   if ($('wizard-network-display') && $('wizard-network-display').checked) networks.push('Google Display Network');
   if ($('review-networks')) $('review-networks').textContent = networks.length ? networks.join(' + ') : 'Search Network';
 
-  const kwCount = ($('wizard-keywords-input') && $('wizard-keywords-input').value.trim()) ? $('wizard-keywords-input').value.trim().split('\n').filter(Boolean).length : 5;
-  if ($('review-kw-count')) $('review-kw-count').textContent = `${kwCount} high-intent keywords configured`;
+  const kwCount = ($('wizard-keywords-input') && $('wizard-keywords-input').value.trim()) ? $('wizard-keywords-input').value.trim().split('\n').filter(Boolean).length : 0;
+  if ($('review-kw-count')) $('review-kw-count').textContent = `${kwCount} keywords configured`;
 
   updateBudgetForecast(parseFloat(budgetVal || 50));
 }
@@ -1469,9 +1553,20 @@ function initCampaignWizard() {
       };
     });
 
-    // Input listeners for RSA live preview
-    document.querySelectorAll('.rsa-hl-input, .rsa-desc-input').forEach(inp => {
-      inp.oninput = () => updateRsaLivePreview();
+    // Input listeners for RSA live preview & char counters
+    document.querySelectorAll('.rsa-hl-input').forEach(inp => {
+      inp.oninput = () => {
+        const counter = inp.parentElement ? inp.parentElement.querySelector('.char-counter') : null;
+        if (counter) counter.textContent = `${inp.value.length}/30`;
+        updateRsaLivePreview();
+      };
+    });
+    document.querySelectorAll('.rsa-desc-input').forEach(inp => {
+      inp.oninput = () => {
+        const counter = inp.parentElement ? inp.parentElement.querySelector('.char-counter') : null;
+        if (counter) counter.textContent = `${inp.value.length}/90`;
+        updateRsaLivePreview();
+      };
     });
 
     // Location radios
@@ -1484,6 +1579,12 @@ function initCampaignWizard() {
       };
     });
   }
+
+  // Additional preview listeners
+  if ($('rsa-final-url')) $('rsa-final-url').oninput = updateRsaLivePreview;
+  if ($('rsa-path-1')) $('rsa-path-1').oninput = updateRsaLivePreview;
+  if ($('rsa-path-2')) $('rsa-path-2').oninput = updateRsaLivePreview;
+  if ($('wizard-keywords-input')) $('wizard-keywords-input').oninput = updateRsaLivePreview;
 
   // Target CPA toggle
   if ($('wizard-set-cpa')) {
@@ -1527,18 +1628,25 @@ function initCampaignWizard() {
   // Keyword scanner simulation
   if ($('wizard-scan-kw-btn')) {
     $('wizard-scan-kw-btn').onclick = () => {
-      const url = $('wizard-kw-scan-url') ? $('wizard-kw-scan-url').value.trim() : 'srslogics.com';
+      const url = $('wizard-kw-scan-url') ? $('wizard-kw-scan-url').value.trim() : '';
+      if (!url) {
+        toast('Please enter your website URL first to get suggestions.', 'error');
+        if ($('wizard-kw-scan-url')) $('wizard-kw-scan-url').focus();
+        return;
+      }
       const cleanUrl = url.replace(/https?:\/\//, '').split('/')[0];
+      const namePart = cleanUrl.split('.')[0] || 'online';
       const generated = [
-        `best marketing services for ${cleanUrl}`,
-        `"enterprise google ads agency"`,
-        `[ppc campaign management services]`,
-        `top digital advertising platform`,
-        `conversion rate optimization services`,
-        `google ads account setup & audit`
+        `${namePart} services`,
+        `best ${namePart} solutions`,
+        `"${namePart} company online"`,
+        `[top ${namePart} platform]`,
+        `${namePart} reviews and pricing`,
+        `professional ${namePart} consultation`
       ].join('\n');
       if ($('wizard-keywords-input')) $('wizard-keywords-input').value = generated;
-      toast('Scanned ' + cleanUrl + ' and populated 6 high-intent keyword targets!', 'success');
+      toast('Generated 6 keyword suggestions based on ' + cleanUrl + '!', 'success');
+      updateRsaLivePreview();
     };
   }
 
@@ -1561,12 +1669,49 @@ function initCampaignWizard() {
         </div>
         <button type="button" class="char-pin-btn" title="Pin position">📌</button>
       `;
-      div.querySelector('input').oninput = (e) => {
-        div.querySelector('.char-counter').textContent = `${e.target.value.length}/30`;
-        updateRsaLivePreview();
-      };
+      const input = div.querySelector('input');
+      if (input) {
+        input.oninput = (e) => {
+          const counter = div.querySelector('.char-counter');
+          if (counter) counter.textContent = `${e.target.value.length}/30`;
+          updateRsaLivePreview();
+        };
+      }
       container.appendChild(div);
-      div.querySelector('input').focus();
+      if (input) input.focus();
+      updateRsaLivePreview();
+    };
+  }
+
+  // Add description button
+  if ($('rsa-add-desc-btn')) {
+    $('rsa-add-desc-btn').onclick = () => {
+      const container = $('rsa-desc-container');
+      if (!container) return;
+      const count = container.querySelectorAll('.char-field-row').length;
+      if (count >= 4) {
+        toast('Maximum 4 descriptions reached.', 'error');
+        return;
+      }
+      const div = document.createElement('div');
+      div.className = 'char-field-row';
+      div.innerHTML = `
+        <div class="char-input-wrap">
+          <textarea class="gcp-input rsa-desc-input" placeholder="New description (optional)" maxlength="90" rows="2" style="width:100%;box-sizing:border-box;resize:none;padding-right:45px;font-size:13px;"></textarea>
+          <span class="char-counter">0/90</span>
+        </div>
+        <button type="button" class="char-pin-btn" title="Pin position">📌</button>
+      `;
+      const textarea = div.querySelector('textarea');
+      if (textarea) {
+        textarea.oninput = (e) => {
+          const counter = div.querySelector('.char-counter');
+          if (counter) counter.textContent = `${e.target.value.length}/90`;
+          updateRsaLivePreview();
+        };
+      }
+      container.appendChild(div);
+      if (textarea) textarea.focus();
       updateRsaLivePreview();
     };
   }
@@ -1597,6 +1742,20 @@ function initCampaignWizard() {
       return;
     }
     wizardState.campaignName = name;
+    // Pre-populate URL and phone forward if user entered them in step 3
+    if ($('wizard-reach-website') && $('wizard-reach-website').checked) {
+      const site = $('wizard-website-url') ? $('wizard-website-url').value.trim() : '';
+      if (site) {
+        if ($('rsa-final-url') && !$('rsa-final-url').value.trim()) $('rsa-final-url').value = site;
+        if ($('wizard-kw-scan-url') && !$('wizard-kw-scan-url').value.trim()) $('wizard-kw-scan-url').value = site;
+      }
+    }
+    if ($('wizard-reach-phone') && $('wizard-reach-phone').checked) {
+      const ph = $('wizard-phone-number') ? $('wizard-phone-number').value.trim() : '';
+      if (ph && $('wizard-asset-phone') && !$('wizard-asset-phone').value.trim()) {
+        $('wizard-asset-phone').value = ph;
+      }
+    }
     renderWizardStep(4);
   };
 
@@ -1664,6 +1823,27 @@ async function submitWizardCampaign() {
   if ($('wizard-network-search') && $('wizard-network-search').checked) networks.push('Search Network');
   if ($('wizard-network-display') && $('wizard-network-display').checked) networks.push('Display Network');
 
+  const headlines = [];
+  const descriptions = [];
+  const sitelinks = [];
+  const callouts = [];
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    document.querySelectorAll('.rsa-hl-input').forEach(inp => {
+      if (inp.value && inp.value.trim()) headlines.push(inp.value.trim());
+    });
+    document.querySelectorAll('.rsa-desc-input').forEach(inp => {
+      if (inp.value && inp.value.trim()) descriptions.push(inp.value.trim());
+    });
+    document.querySelectorAll('.sitelink-chk:checked').forEach(c => {
+      const label = c.closest('label') ? c.closest('label').querySelector('strong') : null;
+      if (label && label.textContent) sitelinks.push(label.textContent.trim());
+    });
+    document.querySelectorAll('.callout-chk:checked').forEach(c => {
+      const label = c.closest('label') ? c.closest('label').querySelector('span') : null;
+      if (label && label.textContent) callouts.push(label.textContent.trim());
+    });
+  }
+
   if (!name) {
     toast('Campaign name is required.', 'error');
     renderWizardStep(3);
@@ -1691,6 +1871,10 @@ async function submitWizardCampaign() {
       optimize_new_customers: optNew,
       reengage_lapsed_customers: optRet,
       keywords,
+      headlines: headlines.join('\n'),
+      descriptions: descriptions.join('\n'),
+      sitelinks: sitelinks.join(', '),
+      callouts: callouts.join(', '),
       networks: networks.join(', ') || 'Search Network',
     });
 

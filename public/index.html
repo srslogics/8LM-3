@@ -661,7 +661,7 @@
               <div class="wizard-card">
                 <h2 class="wizard-card-title" style="font-size:18px;">Campaign name</h2>
                 <div style="margin-top:16px;">
-                  <input type="text" id="wizard-campaign-name" class="gcp-input" value="Sales-Search-1" style="width:100%;max-width:480px;height:42px;font-size:14px;" placeholder="e.g. Sales-Search-1" required>
+                  <input type="text" id="wizard-campaign-name" class="gcp-input" value="" style="width:100%;max-width:480px;height:42px;font-size:14px;" placeholder="e.g. Sales-Search-1" required>
                 </div>
               </div>
 
@@ -676,12 +676,12 @@
                 <div style="display:flex;flex-direction:column;gap:18px;">
                   <!-- Website visits -->
                   <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
-                    <input type="checkbox" id="wizard-reach-website" checked style="margin-top:4px;accent-color:var(--gcp-blue);transform:scale(1.15);">
+                    <input type="checkbox" id="wizard-reach-website" style="margin-top:4px;accent-color:var(--gcp-blue);transform:scale(1.15);">
                     <div style="flex:1;">
                       <div style="font-weight:600;font-size:14px;color:var(--gcp-text);">Website visits</div>
                       <div style="font-size:12px;color:var(--gcp-text-2);margin-bottom:8px;">Drive high-intent buyers directly to your landing page or website</div>
-                      <div id="wizard-reach-website-box">
-                        <input type="url" id="wizard-website-url" class="gcp-input" placeholder="https://example.com" value="https://srslogics.com" style="width:100%;max-width:480px;height:36px;font-size:13px;">
+                      <div id="wizard-reach-website-box" hidden>
+                        <input type="url" id="wizard-website-url" class="gcp-input" placeholder="https://www.example.com" value="" style="width:100%;max-width:480px;height:36px;font-size:13px;">
                       </div>
                     </div>
                   </label>
@@ -693,7 +693,7 @@
                       <div style="font-weight:600;font-size:14px;color:var(--gcp-text);">Phone calls</div>
                       <div style="font-size:12px;color:var(--gcp-text-2);margin-bottom:8px;">Show a clickable phone number in your ads for instant inbound calls</div>
                       <div id="wizard-reach-phone-box" hidden>
-                        <input type="tel" id="wizard-phone-number" class="gcp-input" placeholder="+1 800-555-0199" style="width:100%;max-width:480px;height:36px;font-size:13px;">
+                        <input type="tel" id="wizard-phone-number" class="gcp-input" placeholder="e.g. +1 800-555-0199" value="" style="width:100%;max-width:480px;height:36px;font-size:13px;">
                       </div>
                     </div>
                   </label>
@@ -738,7 +738,7 @@
                   </label>
                   <div id="wizard-cpa-box" hidden style="margin-top:10px;display:flex;align-items:center;gap:8px;">
                     <span style="font-size:14px;color:var(--gcp-text-2);">$</span>
-                    <input type="number" id="wizard-cpa-val" class="gcp-input" value="12.00" step="0.5" style="width:120px;height:36px;">
+                    <input type="number" id="wizard-cpa-val" class="gcp-input" value="" placeholder="10.00" step="0.5" style="width:120px;height:36px;">
                     <span style="font-size:12px;color:var(--gcp-text-3);">Target CPA</span>
                   </div>
                 </div>
@@ -866,7 +866,7 @@
 
                 <!-- URL Scanner -->
                 <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
-                  <input type="url" id="wizard-kw-scan-url" class="gcp-input" placeholder="https://example.com" value="https://srslogics.com" style="flex:1;max-width:380px;height:38px;">
+                  <input type="url" id="wizard-kw-scan-url" class="gcp-input" placeholder="https://www.example.com" value="" style="flex:1;max-width:380px;height:38px;">
                   <button type="button" class="btn btn-outline" id="wizard-scan-kw-btn" style="height:38px;font-size:12px;white-space:nowrap;">
                     ✨ Get keyword suggestions
                   </button>
@@ -874,11 +874,7 @@
 
                 <!-- Keywords Textarea -->
                 <div style="margin-bottom:12px;">
-                  <textarea id="wizard-keywords-input" class="keywords-textarea" rows="6" style="width:100%;box-sizing:border-box;font-family:monospace;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;font-size:13px;">digital marketing agency
-"google ads management"
-[ppc campaign services]
-enterprise marketing analytics
-roi driven ad management</textarea>
+                  <textarea id="wizard-keywords-input" class="keywords-textarea" rows="6" style="width:100%;box-sizing:border-box;font-family:monospace;padding:10px;border:1px solid var(--gcp-border);border-radius:6px;font-size:13px;" placeholder="Enter keywords (one per line)&#10;Example:&#10;running shoes&#10;&quot;leather running shoes&quot;&#10;[best running shoes]"></textarea>
                 </div>
 
                 <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--gcp-text-3);padding-top:4px;">
@@ -899,15 +895,15 @@ roi driven ad management</textarea>
                     <!-- Final URL & Display Path -->
                     <div style="margin-bottom:16px;">
                       <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">Final URL *</label>
-                      <input type="url" id="rsa-final-url" class="gcp-input" value="https://srslogics.com" style="width:100%;height:38px;box-sizing:border-box;">
+                      <input type="url" id="rsa-final-url" class="gcp-input" placeholder="https://www.example.com" value="" style="width:100%;height:38px;box-sizing:border-box;">
                     </div>
                     <div style="margin-bottom:18px;">
                       <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">Display path</label>
                       <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gcp-text-2);">
-                        <span>srslogics.com /</span>
-                        <input type="text" id="rsa-path-1" class="gcp-input" value="services" maxlength="15" style="width:110px;height:34px;text-align:center;">
+                        <span id="rsa-display-domain">example.com /</span>
+                        <input type="text" id="rsa-path-1" class="gcp-input" placeholder="path 1" value="" maxlength="15" style="width:110px;height:34px;text-align:center;">
                         <span>/</span>
-                        <input type="text" id="rsa-path-2" class="gcp-input" value="ads" maxlength="15" style="width:110px;height:34px;text-align:center;">
+                        <input type="text" id="rsa-path-2" class="gcp-input" placeholder="path 2" value="" maxlength="15" style="width:110px;height:34px;text-align:center;">
                       </div>
                     </div>
 
@@ -915,42 +911,28 @@ roi driven ad management</textarea>
                     <div style="margin-bottom:20px;">
                       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                         <label style="font-size:12px;font-weight:600;color:var(--gcp-text);">Headlines (3 to 15)</label>
-                        <span style="font-size:11px;color:var(--gcp-text-3);" id="rsa-headline-count">5 / 15 added</span>
+                        <span style="font-size:11px;color:var(--gcp-text-3);" id="rsa-headline-count">0 / 15 added</span>
                       </div>
 
                       <div id="rsa-headlines-container">
                         <div class="char-field-row">
                           <div class="char-input-wrap">
-                            <input type="text" class="gcp-input rsa-hl-input" value="Scale Your Business Online" maxlength="30" style="width:100%;height:36px;padding-right:45px;box-sizing:border-box;">
-                            <span class="char-counter">25/30</span>
+                            <input type="text" class="gcp-input rsa-hl-input" placeholder="Headline 1 (required)" maxlength="30" style="width:100%;height:36px;padding-right:45px;box-sizing:border-box;">
+                            <span class="char-counter">0/30</span>
                           </div>
-                          <button type="button" class="char-pin-btn pinned" title="Pin to position 1">📌</button>
+                          <button type="button" class="char-pin-btn" title="Pin to position 1">📌</button>
                         </div>
                         <div class="char-field-row">
                           <div class="char-input-wrap">
-                            <input type="text" class="gcp-input rsa-hl-input" value="Top Google Ads Performance" maxlength="30" style="width:100%;height:36px;padding-right:45px;box-sizing:border-box;">
-                            <span class="char-counter">26/30</span>
-                          </div>
-                          <button type="button" class="char-pin-btn" title="Pin position">📌</button>
-                        </div>
-                        <div class="char-field-row">
-                          <div class="char-input-wrap">
-                            <input type="text" class="gcp-input rsa-hl-input" value="8LM Marketing Intelligence" maxlength="30" style="width:100%;height:36px;padding-right:45px;box-sizing:border-box;">
-                            <span class="char-counter">25/30</span>
+                            <input type="text" class="gcp-input rsa-hl-input" placeholder="Headline 2 (required)" maxlength="30" style="width:100%;height:36px;padding-right:45px;box-sizing:border-box;">
+                            <span class="char-counter">0/30</span>
                           </div>
                           <button type="button" class="char-pin-btn" title="Pin position">📌</button>
                         </div>
                         <div class="char-field-row">
                           <div class="char-input-wrap">
-                            <input type="text" class="gcp-input rsa-hl-input" value="Maximize Conversion ROI" maxlength="30" style="width:100%;height:36px;padding-right:45px;box-sizing:border-box;">
-                            <span class="char-counter">23/30</span>
-                          </div>
-                          <button type="button" class="char-pin-btn" title="Pin position">📌</button>
-                        </div>
-                        <div class="char-field-row">
-                          <div class="char-input-wrap">
-                            <input type="text" class="gcp-input rsa-hl-input" value="Get Free Growth Audit Today" maxlength="30" style="width:100%;height:36px;padding-right:45px;box-sizing:border-box;">
-                            <span class="char-counter">27/30</span>
+                            <input type="text" class="gcp-input rsa-hl-input" placeholder="Headline 3 (required)" maxlength="30" style="width:100%;height:36px;padding-right:45px;box-sizing:border-box;">
+                            <span class="char-counter">0/30</span>
                           </div>
                           <button type="button" class="char-pin-btn" title="Pin position">📌</button>
                         </div>
@@ -962,21 +944,21 @@ roi driven ad management</textarea>
                     <div style="margin-bottom:16px;">
                       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                         <label style="font-size:12px;font-weight:600;color:var(--gcp-text);">Descriptions (2 to 4)</label>
-                        <span style="font-size:11px;color:var(--gcp-text-3);">2 / 4 added</span>
+                        <span style="font-size:11px;color:var(--gcp-text-3);" id="rsa-desc-count">0 / 4 added</span>
                       </div>
 
                       <div id="rsa-desc-container">
                         <div class="char-field-row">
                           <div class="char-input-wrap">
-                            <textarea class="gcp-input rsa-desc-input" maxlength="90" rows="2" style="width:100%;box-sizing:border-box;resize:none;padding-right:45px;font-size:13px;">Maximize leads and revenue with verified Google Ads tracking, real-time KPI metrics &amp; insights.</textarea>
-                            <span class="char-counter">90/90</span>
+                            <textarea class="gcp-input rsa-desc-input" placeholder="Description 1 (required)" maxlength="90" rows="2" style="width:100%;box-sizing:border-box;resize:none;padding-right:45px;font-size:13px;"></textarea>
+                            <span class="char-counter">0/90</span>
                           </div>
                           <button type="button" class="char-pin-btn" title="Pin position">📌</button>
                         </div>
                         <div class="char-field-row">
                           <div class="char-input-wrap">
-                            <textarea class="gcp-input rsa-desc-input" maxlength="90" rows="2" style="width:100%;box-sizing:border-box;resize:none;padding-right:45px;font-size:13px;">Trusted by high-growth companies. Set up in minutes and turn clicks into loyal customers.</textarea>
-                            <span class="char-counter">89/90</span>
+                            <textarea class="gcp-input rsa-desc-input" placeholder="Description 2 (optional)" maxlength="90" rows="2" style="width:100%;box-sizing:border-box;resize:none;padding-right:45px;font-size:13px;"></textarea>
+                            <span class="char-counter">0/90</span>
                           </div>
                           <button type="button" class="char-pin-btn" title="Pin position">📌</button>
                         </div>
@@ -992,25 +974,25 @@ roi driven ad management</textarea>
                       <div class="ad-strength-header">
                         <div class="ad-strength-status">
                           <span>Ad strength:</span>
-                          <span style="color:#1e8e3e;" id="rsa-strength-label">Good</span>
+                          <span style="color:#5f6368;" id="rsa-strength-label">Incomplete</span>
                         </div>
                         <div class="ad-strength-bars">
-                          <div class="ad-strength-bar bar-poor"></div>
-                          <div class="ad-strength-bar bar-avg"></div>
-                          <div class="ad-strength-bar bar-good"></div>
-                          <div class="ad-strength-bar"></div>
+                          <div class="ad-strength-bar" id="str-bar-1"></div>
+                          <div class="ad-strength-bar" id="str-bar-2"></div>
+                          <div class="ad-strength-bar" id="str-bar-3"></div>
+                          <div class="ad-strength-bar" id="str-bar-4"></div>
                         </div>
                       </div>
                       <div class="ad-strength-checklist">
-                        <div class="ad-strength-check-item done">
+                        <div class="ad-strength-check-item" id="chk-keywords">
                           <div class="ad-strength-check-icon">✓</div>
                           <span>Include popular keywords in your headlines</span>
                         </div>
-                        <div class="ad-strength-check-item done">
+                        <div class="ad-strength-check-item" id="chk-unique-hl">
                           <div class="ad-strength-check-icon">✓</div>
                           <span>Make your headlines more unique</span>
                         </div>
-                        <div class="ad-strength-check-item done">
+                        <div class="ad-strength-check-item" id="chk-desc">
                           <div class="ad-strength-check-icon">✓</div>
                           <span>Add distinct descriptions</span>
                         </div>
@@ -1030,13 +1012,13 @@ roi driven ad management</textarea>
                       <div class="mock-ad-meta">
                         <span class="mock-ad-badge">Sponsored</span>
                         <span>·</span>
-                        <span class="mock-ad-url" id="mock-preview-url">https://srslogics.com › services › ads</span>
+                        <span class="mock-ad-url" id="mock-preview-url">https://www.example.com</span>
                       </div>
                       <div class="mock-ad-headline" id="mock-preview-hl">
-                        Scale Your Business Online | Top Google Ads Performance
+                        Headline 1 | Headline 2
                       </div>
                       <div class="mock-ad-desc" id="mock-preview-desc">
-                        Maximize leads and revenue with verified Google Ads tracking, real-time KPI metrics &amp; insights.
+                        Your ad description will appear here as you type.
                       </div>
                       <div class="mock-ad-sitelinks">
                         <div>
@@ -1045,7 +1027,7 @@ roi driven ad management</textarea>
                         </div>
                         <div>
                           <div class="mock-sitelink-title">Case Studies</div>
-                          <div class="mock-sitelink-desc">See 4.2x ROAS results</div>
+                          <div class="mock-sitelink-desc">See customer results</div>
                         </div>
                       </div>
                     </div>
@@ -1068,28 +1050,28 @@ roi driven ad management</textarea>
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
                   <label style="border:1px solid var(--gcp-border);border-radius:6px;padding:12px;background:var(--gcp-surface);display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
-                    <input type="checkbox" class="sitelink-chk" checked style="accent-color:var(--gcp-blue);margin-top:2px;">
+                    <input type="checkbox" class="sitelink-chk" style="accent-color:var(--gcp-blue);margin-top:2px;">
                     <div>
                       <strong style="font-size:13px;display:block;">Pricing &amp; Plans</strong>
                       <span style="font-size:11px;color:var(--gcp-text-2);">Transparent pricing for all business sizes</span>
                     </div>
                   </label>
                   <label style="border:1px solid var(--gcp-border);border-radius:6px;padding:12px;background:var(--gcp-surface);display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
-                    <input type="checkbox" class="sitelink-chk" checked style="accent-color:var(--gcp-blue);margin-top:2px;">
+                    <input type="checkbox" class="sitelink-chk" style="accent-color:var(--gcp-blue);margin-top:2px;">
                     <div>
                       <strong style="font-size:13px;display:block;">Case Studies</strong>
                       <span style="font-size:11px;color:var(--gcp-text-2);">See how our clients achieved 4.2x ROAS</span>
                     </div>
                   </label>
                   <label style="border:1px solid var(--gcp-border);border-radius:6px;padding:12px;background:var(--gcp-surface);display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
-                    <input type="checkbox" class="sitelink-chk" checked style="accent-color:var(--gcp-blue);margin-top:2px;">
+                    <input type="checkbox" class="sitelink-chk" style="accent-color:var(--gcp-blue);margin-top:2px;">
                     <div>
                       <strong style="font-size:13px;display:block;">Schedule a Demo</strong>
                       <span style="font-size:11px;color:var(--gcp-text-2);">Speak directly with a PPC specialist</span>
                     </div>
                   </label>
                   <label style="border:1px solid var(--gcp-border);border-radius:6px;padding:12px;background:var(--gcp-surface);display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
-                    <input type="checkbox" class="sitelink-chk" checked style="accent-color:var(--gcp-blue);margin-top:2px;">
+                    <input type="checkbox" class="sitelink-chk" style="accent-color:var(--gcp-blue);margin-top:2px;">
                     <div>
                       <strong style="font-size:13px;display:block;">Contact Support</strong>
                       <span style="font-size:11px;color:var(--gcp-text-2);">24/7 dedicated customer assistance</span>
@@ -1105,19 +1087,19 @@ roi driven ad management</textarea>
 
                 <div style="display:flex;flex-wrap:wrap;gap:10px;">
                   <label style="border:1px solid var(--gcp-border);border-radius:20px;padding:6px 14px;background:var(--gcp-surface);display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13px;">
-                    <input type="checkbox" class="callout-chk" checked style="accent-color:var(--gcp-blue);">
+                    <input type="checkbox" class="callout-chk" style="accent-color:var(--gcp-blue);">
                     <span>Verified Google Partner</span>
                   </label>
                   <label style="border:1px solid var(--gcp-border);border-radius:20px;padding:6px 14px;background:var(--gcp-surface);display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13px;">
-                    <input type="checkbox" class="callout-chk" checked style="accent-color:var(--gcp-blue);">
+                    <input type="checkbox" class="callout-chk" style="accent-color:var(--gcp-blue);">
                     <span>Real-Time Attribution</span>
                   </label>
                   <label style="border:1px solid var(--gcp-border);border-radius:20px;padding:6px 14px;background:var(--gcp-surface);display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13px;">
-                    <input type="checkbox" class="callout-chk" checked style="accent-color:var(--gcp-blue);">
+                    <input type="checkbox" class="callout-chk" style="accent-color:var(--gcp-blue);">
                     <span>No Setup Fees</span>
                   </label>
                   <label style="border:1px solid var(--gcp-border);border-radius:20px;padding:6px 14px;background:var(--gcp-surface);display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13px;">
-                    <input type="checkbox" class="callout-chk" checked style="accent-color:var(--gcp-blue);">
+                    <input type="checkbox" class="callout-chk" style="accent-color:var(--gcp-blue);">
                     <span>24/7 Priority Support</span>
                   </label>
                 </div>
@@ -1129,7 +1111,7 @@ roi driven ad management</textarea>
                 <p class="wizard-card-subtitle" style="margin-bottom:14px;">Allow mobile searchers to call your business directly from your ads</p>
                 <div style="display:flex;align-items:center;gap:10px;">
                   <span style="font-size:14px;color:var(--gcp-text-2);">📞</span>
-                  <input type="tel" id="wizard-asset-phone" class="gcp-input" value="+1 (820) 330-9235" style="width:240px;height:38px;">
+                  <input type="tel" id="wizard-asset-phone" class="gcp-input" value="" placeholder="e.g. +1 800-555-0199" style="width:240px;height:38px;">
                 </div>
               </div>
 
