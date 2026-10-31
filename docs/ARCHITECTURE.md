@@ -45,10 +45,10 @@ stateDiagram-v2
 
 A workspace lock serializes publication with account/permission changes. SENDING commits on an independent connection before the Google mutation, so rollback cannot erase the intent. Retries of SENDING/UNKNOWN reconcile the unique campaign-name marker rather than resend. This prevents automatic duplicate writes; it is not a claim of distributed exactly-once delivery. An unresolved outcome requires inspecting Google Ads. Do not rename the marker before reconciliation.
 
-The atomic Google mutation creates budget, paused Search campaign, location, ad group, keywords and responsive search ad with partialFailure=false. Validate-only precedes creation. Google remains the source of truth for published resources and reports.
+The atomic Google mutation uses channel-specific builders in app/integrations/campaign_builders.py, with the existing Search builder retained. Every supported type creates its budget, paused campaign and dependent groups, ads, criteria and asset links with partialFailure=false. Type-specific contracts live in app/api/campaign_types.py. Validate-only precedes creation. Google remains the source of truth for published resources and reports.
 
 ## Frontend and scope
 
-The restored nine-step builder remains in public/. JavaScript executes browser interactions; Python replaces the backend. Supported fields produce a validated Search draft; a separate confirmation publishes it paused. Unsupported advanced controls remain disabled. Browser fixtures cover all nine steps; integration tests cover real API/database behavior separately.
+The restored nine-step builder remains in public/. JavaScript executes browser interactions; Python replaces the backend. Supported fields produce a validated campaign draft for one of five supported types; a separate confirmation publishes it paused. Unsupported advanced controls remain disabled. Browser fixtures cover all nine steps; integration tests cover real API/database behavior separately.
 
 No microservices, Redis, ORM, frontend framework or background queue is added. Email verification, recovery, delivery and MFA remain unimplemented. Dependencies are locked in uv.lock; requirements.txt is a hash-pinned production export.

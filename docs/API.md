@@ -24,3 +24,7 @@ Publication returns 200 with a confirmed Google resource, 202 with pending:true 
 Legacy demo, unverified link and CM360 routes are absent. Default workspace creation is explicit; Node's test-only auto-create behavior was not a production contract.
 
 ENABLE_API_DOCS=true exposes /openapi.json locally with typed request schemas. Response envelopes remain service dictionaries for compatibility; introduce explicit response DTOs as the API evolves.
+
+Campaign creation uses a discriminated `channel` contract: Search, Performance Max, Demand Gen, Display, or Shopping. See `app/api/campaign_types.py` and OpenAPI for exact required fields. Non-applicable fields are rejected. Existing Search JSON is unchanged.
+
+`GET /api/workspaces/{wid}/ads/creative-resources/images` and `/audiences` return `{customer_id, items}` for the selected account, limited to 200 results. Workspace editors and publishers can read these resources. Requests use the workspace OAuth connection and manager ID; browser callers never supply credentials. Asset/audience references must belong to the draft account. Google image metadata is checked again before validation and publication.

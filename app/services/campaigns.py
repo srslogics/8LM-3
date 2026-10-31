@@ -6,6 +6,7 @@ from psycopg.types.json import Jsonb
 
 from app.core.errors import AppError, GoogleError
 from app.core.security import now_ms
+from app.integrations.campaign_builders import CHANNELS, check_resource_accounts
 from app.services.workspaces import EDITORS, MANAGERS, PUBLISHERS
 
 
@@ -76,10 +77,23 @@ class CampaignService:
                 ads["customer_id"],
             )
 
+    async def creative_resources(self, wid, user, kind):
+        if kind not in ("images", "audiences"):
+            raise AppError("Unknown resource type.", 404)
+        async with self.workspaces.locked(wid, user, EDITORS):
+            ads = await self.connection.selected(wid)
+            token = await self.connection.token(wid)
+            method = self.google.assets if kind == "images" else self.google.audiences
+            return {
+                "customer_id": ads["customer_id"],
+                "items": await method(token, ads["customer_id"], ads["manager_id"]),
+            }
+
     async def draft(self, wid, user, payload):
         key = uuid4()
         async with self.workspaces.locked(wid, user, EDITORS):
             ads = await self.connection.selected(wid)
+            check_resource_accounts(ads["customer_id"], payload)
             await self.db.run(
                 "INSERT INTO eightlm.campaign_publications(id,workspace_id,customer_id,payload,created_at) VALUES(%s,%s,%s,%s,%s)",
                 key,
@@ -109,7 +123,7 @@ class CampaignService:
             {
                 "id": resource.split("/")[-1],
                 "name": job["payload"]["name"],
-                "channel": "SEARCH",
+                "channel": CHANNELS[job["payload"].get("channel", "Search")],
                 "status": "PAUSED",
                 "budget": job["payload"]["budget"],
                 "resource": resource,
@@ -117,7 +131,12 @@ class CampaignService:
             imported=True,
         )
         await self.workspaces.audit(
-            job["workspace_id"], user, "Published paused Search campaign " + resource.split("/")[-1]
+            job["workspace_id"],
+            user,
+            "Published paused "
+            + job["payload"].get("channel", "Search")
+            + " campaign "
+            + resource.split("/")[-1],
         )
 
     async def publish(self, wid, user, draft_id):
@@ -146,6 +165,7 @@ class CampaignService:
                     }
                 await self.record(job, resource, ads, user)
                 return {"ok": True, "resource": resource, "status": "PAUSED"}
+            await self.google.validate_images(token, customer, job["payload"], manager)
             await self.google.publish(
                 token, customer, job["payload"], key, manager, validate_only=True
             )

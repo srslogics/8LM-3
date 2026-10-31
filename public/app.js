@@ -1317,6 +1317,7 @@ async function openCreateCampaignWizard() {
 
   showView("create-campaign");
   configureSupportedWizard();
+  setupCampaignTypes();
   renderWizardStep(1);
   await loadAds(activeWs, currentManage);
   document
@@ -1352,7 +1353,7 @@ function renderWizardStep(stepNum) {
 
   // Update main title
   if ($("wizard-main-title")) {
-    $("wizard-main-title").textContent = STEP_TITLES[stepNum] || "New campaign";
+    $("wizard-main-title").textContent = stepNum === 6 && wizardState.channel !== "Search" ? (wizardState.channel === "Shopping" ? "Product feed" : "Ad creative") : STEP_TITLES[stepNum] || "New campaign";
   }
 
   // Update stepper navigation
@@ -1613,6 +1614,9 @@ function populateWizardReview() {
   if ($("review-kw-count"))
     $("review-kw-count").textContent = `${kwCount} keywords configured`;
 
+  if (wizardState.channel !== "Search") {
+    $("channel-review").textContent = campaignReviewText(extendedCampaignPayload({name: nameVal, ad_group: $("wizard-adgroup").value, budget: budgetVal, cpc: $("wizard-max-cpc").value, country: wizardState.targetLocation, eu_political: $("wizard-eu").checked ? false : null}));
+  }
   updateBudgetForecast(parseFloat(budgetVal || 500));
 }
 
@@ -1877,6 +1881,7 @@ function initCampaignWizard() {
           ? $("wizard-website-url").value.trim()
           : "";
         if (site) {
+          if ($("channel-url") && !$("channel-url").value.trim()) $("channel-url").value = site;
           if ($("rsa-final-url") && !$("rsa-final-url").value.trim())
             $("rsa-final-url").value = site;
           if ($("wizard-kw-scan-url") && !$("wizard-kw-scan-url").value.trim())
@@ -1990,13 +1995,6 @@ function configureSupportedWizard() {
       el.disabled = true;
       el.title = "Not connected to publishing yet";
     });
-  root.querySelectorAll("#wizard-type-grid [data-type]").forEach((el) => {
-    if (el.dataset.type !== "Search") {
-      el.setAttribute("aria-disabled", "true");
-      el.onclick = () => toast("Only Search publishing is connected.", "error");
-      el.title = "Not connected to publishing yet";
-    }
-  });
   root.querySelectorAll('input[name="wizard-location-opt"]').forEach((el) => {
     el.checked = el.value === "India";
     el.disabled = !["India", "United States", "United Kingdom"].includes(
@@ -2060,7 +2058,7 @@ async function submitWizardCampaign() {
       .filter(Boolean)
       .join("\n");
   try {
-    await workspaceRequest("/" + activeWs + "/campaigns/create", "POST", {
+    await workspaceRequest("/" + activeWs + "/campaigns/create", "POST", extendedCampaignPayload({
       name: $("wizard-campaign-name").value,
       channel: "Search",
       ad_group: $("wizard-adgroup").value,
@@ -2073,7 +2071,7 @@ async function submitWizardCampaign() {
       headlines: lines(".rsa-hl-input"),
       descriptions: lines(".rsa-desc-input"),
       eu_political: $("wizard-eu").checked ? false : null,
-    });
+    }));
     toast("Draft saved. Review it before publishing to Google Ads.", "success");
     showView("campaigns");
   } catch (error) {
@@ -2090,7 +2088,7 @@ async function loadPublications(wsId) {
     if (wsId !== activeWs) return;
     if (!result.drafts.length) {
       box.textContent =
-        "No drafts yet. Create a Search campaign to get started.";
+        "No drafts yet. Create a campaign to get started.";
       return;
     }
     for (const draft of result.drafts) {
@@ -2115,25 +2113,7 @@ async function loadPublications(wsId) {
       summary.textContent = "Review configuration";
       const text = document.createElement("pre");
       const p = draft.payload;
-      text.textContent = [
-        "Ad group: " + p.ad_group,
-        "Daily budget: " + p.budget + " (account currency)",
-        "Maximum CPC: " + p.cpc + " (account currency)",
-        "Country: " + p.country,
-        "Keyword match: " + p.match_type,
-        "Landing page: " + p.final_url,
-        "",
-        "Keywords",
-        ...p.keywords,
-        "",
-        "Headlines",
-        ...p.headlines,
-        "",
-        "Descriptions",
-        ...p.descriptions,
-        "",
-        "Search only · Manual CPC · Published paused",
-      ].join("\n");
+      text.textContent = campaignReviewText(p);
       review.append(summary, text);
       details.append(review);
       if (draft.error) {
@@ -2157,7 +2137,7 @@ async function loadPublications(wsId) {
           if (
             draft.state === "DRAFT" &&
             !confirm(
-              "Publish this Search campaign to Google Ads account " +
+              "Publish this " + (draft.payload.channel || "Search") + " campaign to Google Ads account " +
                 draft.customer_id +
                 "? It will be created paused with the reviewed budget.",
             )

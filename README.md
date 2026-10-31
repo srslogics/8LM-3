@@ -76,4 +76,4 @@ Users, hashes, sessions, memberships, OAuth grants and campaign records stay in 
 - [Deployment, cutover and rollback](docs/DEPLOYMENT.md)
 - [API contract and compatibility](docs/API.md)
 
-The builder publishes supported Search campaigns paused after explicit confirmation. Other campaign types and advanced controls remain visibly unavailable. Live Google acceptance must be checked with an authorized account after deployment.
+The nine-step builder supports Search, standard non-retail Performance Max, Demand Gen image ads, responsive Display ads, and standard Shopping campaigns. Each draft is validated and published paused after confirmation. Image formats reuse assets in the selected Google Ads account; Shopping requires a linked Merchant Center feed. Standard Video opens a Google Ads handoff. See [campaign support and requirements](docs/CAMPAIGN_TYPES.md). Live Google acceptance must be checked with an authorized account after deployment.

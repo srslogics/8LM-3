@@ -7,6 +7,7 @@ import httpx
 
 from app.core.config import Settings
 from app.core.errors import GoogleError
+from app.integrations.campaign_builders import build_operations
 
 ADS_SCOPE = "https://www.googleapis.com/auth/adwords"
 
@@ -233,6 +234,77 @@ class GoogleAdsClient:
             )
         }
 
+    async def assets(self, token, customer, manager=None):
+        rows = await self.search(
+            token,
+            customer,
+            "SELECT asset.resource_name, asset.name, asset.image_asset.full_size.url, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels FROM asset WHERE asset.type = 'IMAGE' ORDER BY asset.id DESC LIMIT 200",
+            manager,
+        )
+        return [
+            {
+                "resource": r["asset"]["resourceName"],
+                "name": r["asset"].get("name", "Image"),
+                **r["asset"].get("imageAsset", {}).get("fullSize", {}),
+            }
+            for r in rows
+        ]
+
+    async def audiences(self, token, customer, manager=None):
+        rows = await self.search(
+            token,
+            customer,
+            "SELECT audience.resource_name, audience.name FROM audience WHERE audience.status = 'ENABLED' LIMIT 200",
+            manager,
+        )
+        return [
+            {
+                "resource": r["audience"]["resourceName"],
+                "name": r["audience"].get("name", "Audience"),
+            }
+            for r in rows
+        ]
+
+    async def validate_images(self, token, customer, payload, manager=None):
+        # Query only exact validated resource names, not the first page of the asset picker.
+        from app.integrations.campaign_builders import check_resource_accounts
+
+        check_resource_accounts(customer, payload)
+        if not payload.get("landscape_image"):
+            return
+        import re
+
+        names = [payload[k] for k in ("landscape_image", "square_image", "logo")]
+        if any(not re.fullmatch(r"customers/\d{10}/assets/\d+", n) for n in names):
+            raise GoogleError("Invalid image asset identifier.")
+        quoted = ",".join("'" + n + "'" for n in set(names))
+        rows = await self.search(
+            token,
+            customer,
+            "SELECT asset.resource_name, asset.type, asset.image_asset.full_size.width_pixels, asset.image_asset.full_size.height_pixels FROM asset WHERE asset.resource_name IN ("
+            + quoted
+            + ")",
+            manager,
+        )
+        images = {r["asset"]["resourceName"]: r["asset"] for r in rows}
+        for field, width, height, ratio in (
+            ("landscape_image", 600, 314, 1.91),
+            ("square_image", 300, 300, 1),
+            ("logo", 128, 128, 1),
+        ):
+            asset = images.get(payload[field], {})
+            size = asset.get("imageAsset", {}).get("fullSize", {})
+            w, h = int(size.get("widthPixels", 0)), int(size.get("heightPixels", 0))
+            if (
+                asset.get("type") != "IMAGE"
+                or w < width
+                or h < height
+                or abs(w / max(h, 1) - ratio) > ratio * 0.01
+            ):
+                raise GoogleError(
+                    f"{field.replace('_', ' ').capitalize()}: choose an image of at least {width} × {height} pixels with a {ratio}:1 aspect ratio."
+                )
+
     async def publish(
         self, token, customer, payload, publication_id, manager=None, validate_only=False
     ):
@@ -280,6 +352,8 @@ def micros(value):
 
 
 def campaign_operations(customer, payload, publication_id):
+    if payload.get("channel", "Search") != "Search":
+        return build_operations(customer, payload, publication_id, micros)
     base = f"customers/{customer}"
     budget, campaign, group = (
         f"{base}/campaignBudgets/-1",

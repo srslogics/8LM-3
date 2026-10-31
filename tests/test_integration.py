@@ -59,6 +59,27 @@ class GoogleStub:
                     if key in self.publications
                     else []
                 )
+            elif "FROM asset" in query:
+                rows = [
+                    {
+                        "asset": {
+                            "resourceName": f"customers/1234567890/assets/{i}",
+                            "name": "Image",
+                            "type": "IMAGE",
+                            "imageAsset": {"fullSize": {"widthPixels": w, "heightPixels": h}},
+                        }
+                    }
+                    for i, w, h in [(1, 1200, 628), (2, 1200, 1200), (3, 128, 128)]
+                ]
+            elif "FROM audience" in query:
+                rows = [
+                    {
+                        "audience": {
+                            "resourceName": "customers/1234567890/audiences/1",
+                            "name": "Customers",
+                        }
+                    }
+                ]
             elif "FROM customer LIMIT" in query:
                 rows = [
                     {
@@ -355,3 +376,41 @@ async def test_callback_rechecks_role_and_browser_session(system):
             wid,
             user["id"],
         )
+
+
+async def test_all_campaign_type_routes(system):
+    from test_campaign_types import campaign_data
+
+    app, (owner, viewer, outsider), emails, wid, stub = system
+    prefix = f"/api/workspaces/{wid}"
+    invitation = (
+        await owner.post(prefix + "/invites", json={"email": emails[1], "role": "Viewer"})
+    ).json()
+    await viewer.post("/api/workspaces/accept", json=invitation)
+    start = (await owner.get(prefix + "/auth/google/url")).json()
+    state = parse_qs(urlsplit(start["url"]).query)["state"][0]
+    await owner.get("/api/auth/google/callback", params={"state": state, "code": "test"})
+    await owner.post(prefix + "/ads/customer-id", json={"customer_id": "1234567890"})
+    for kind in ("images", "audiences"):
+        assert (await viewer.get(prefix + "/ads/creative-resources/" + kind)).status_code == 403
+        response = await owner.get(prefix + "/ads/creative-resources/" + kind)
+        assert response.status_code == 200 and response.json()["items"]
+    for channel in ("Performance Max", "Demand Gen", "Display", "Shopping"):
+        data = campaign_data(channel)
+        assert (await viewer.post(prefix + "/campaigns/create", json=data)).status_code == 403
+        result = await owner.post(prefix + "/campaigns/create", json=data)
+        assert result.status_code == 200, result.text
+        key = result.json()["draft"]["id"]
+        route = prefix + "/campaigns/" + key + "/publish"
+        assert (await viewer.post(route)).status_code == 403
+        result = await owner.post(route)
+        assert result.status_code == 200, result.text
+        assert result.json()["status"] == "PAUSED"
+        assert (await owner.post(route)).json()["resource"] == result.json()["resource"]
+    assert stub.mutations == 4 and stub.validations == 4
+    rows = await app.state.services.db.all(
+        "SELECT channel FROM eightlm.campaigns WHERE workspace_id=%s", wid
+    )
+    assert {r["channel"] for r in rows} == {"PERFORMANCE_MAX", "DEMAND_GEN", "DISPLAY", "SHOPPING"}
+    wrong = {**campaign_data("Display"), "logo": "customers/9999999999/assets/1"}
+    assert (await owner.post(prefix + "/campaigns/create", json=wrong)).status_code == 400

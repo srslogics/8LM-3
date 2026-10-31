@@ -3,8 +3,9 @@ from uuid import UUID
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
+from app.api.campaign_types import CampaignInput
 from app.api.dependencies import User, services
-from app.api.schemas import CampaignImport, CampaignStatus, SearchCampaign
+from app.api.schemas import CampaignImport, CampaignStatus
 
 router = APIRouter(prefix="/api/workspaces/{wid}", tags=["Campaigns"])
 
@@ -21,7 +22,7 @@ async def track(wid: int, body: CampaignImport, request: Request, user: User):
 
 
 @router.post("/campaigns/create")
-async def create(wid: int, body: SearchCampaign, request: Request, user: User):
+async def create(wid: int, body: CampaignInput, request: Request, user: User):
     draft = await services(request).campaigns.draft(wid, user, body.payload())
     return {"ok": True, "draft": draft}
 
@@ -49,3 +50,8 @@ async def status(wid: int, campaign_id: str, body: CampaignStatus, request: Requ
 async def untrack(wid: int, campaign_id: str, request: Request, user: User):
     await services(request).campaigns.untrack(wid, user, campaign_id)
     return {"ok": True}
+
+
+@router.get("/ads/creative-resources/{kind}")
+async def creative_resources(wid: int, kind: str, request: Request, user: User):
+    return await services(request).campaigns.creative_resources(wid, user, kind)
