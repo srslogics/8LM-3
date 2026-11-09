@@ -26,6 +26,7 @@
     <script src="/campaign-types.js" defer></script>
     <script src="/meta-editor.js" defer></script>
     <script src="/meta.js" defer></script>
+    <script src="/campaign-platforms.js" defer></script>
     <script src="/app.js" defer></script>
     <script src="/workspace.js" defer></script>
   </head>
@@ -393,6 +394,13 @@
 
         <!-- Main content area -->
         <main id="main-content">
+          <div id="campaign-platform-nav" class="campaign-platform-nav" hidden>
+            <div class="campaign-platform-buttons" role="group" aria-label="Advertising platform">
+              <button id="campaign-platform-google" type="button" aria-pressed="false">Google Ads</button>
+              <button id="campaign-platform-meta" type="button" aria-pressed="false">Meta Ads</button>
+            </div>
+            <p id="campaign-platform-status" class="subtle" role="status"></p>
+          </div>
           <!-- ══════ VIEW: Members & access ══════ -->
           <section id="view-members" class="page-view" hidden>
             <div class="page-header">
@@ -3751,7 +3759,7 @@
           </section>
 
 <section id="view-meta" class="page-view" hidden>
-  <div class="page-header"><div><p class="eyebrow">INTEGRATIONS</p><h1>Meta Ads</h1><p class="subtle">Connect an ad account, review performance, and build campaigns.</p></div><button id="meta-create" class="btn btn-filled" hidden>Create campaign</button></div>
+  <div class="page-header"><div><p class="eyebrow" id="meta-page-eyebrow">INTEGRATIONS</p><h1 id="meta-page-title">Meta Ads</h1><p class="subtle">Connect an ad account, review performance, and build campaigns.</p></div><button id="meta-create" class="btn btn-filled" hidden>Create campaign</button></div>
   <p id="meta-error" class="publish-error" role="alert"></p>
   <div class="gcp-card"><div class="gcp-card-body">
     <div class="connection-header"><div><h2 id="meta-connection-title">Connect Meta</h2><p id="meta-connection-detail" class="subtle">Your 8LM login stays separate from your Meta account.</p></div><span id="meta-connection-status" class="status-pill">Not connected</span></div>

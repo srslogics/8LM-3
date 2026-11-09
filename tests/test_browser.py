@@ -42,6 +42,8 @@ def test_nine_step_builder_and_publication(channel):
                     "invites": [],
                     "activity": [],
                 }
+            elif path.endswith("/meta"):
+                result = {"configured": False, "connection": None, "account": None}
             elif path.endswith("/ads/accounts"):
                 result = {
                     "accounts": [

@@ -90,6 +90,7 @@ $("sidebar").addEventListener("click", event => { if (event.target.closest(".sid
 function showView(view) {
   closeNavigation();
   currentView = view;
+  $("campaign-platform-nav").hidden = view !== "campaigns";
   for (const item of document.querySelectorAll("#sidebar .sidebar-nav-item")) {
     if (item.dataset.view === (view === "create-campaign" ? "campaigns" : view)) item.setAttribute("aria-current", "page");
     else item.removeAttribute("aria-current");
@@ -97,12 +98,16 @@ function showView(view) {
   if (view !== "meta") document.body.classList.remove("me-is-editing");
   if ($("view-meta")) $("view-meta").hidden = view !== "meta";
   if ($("nav-meta")) $("nav-meta").classList.toggle("active", view === "meta");
-  if (view === "meta") loadMeta();
+  if (view === "meta") {
+    $("meta-page-title").textContent = "Meta Ads";
+    $("meta-page-eyebrow").textContent = "INTEGRATIONS";
+    loadMeta();
+  }
   const viewCampaigns = $("view-campaigns");
   const viewMembers = $("view-members");
   const viewAds = $("view-ads");
   const viewCreateCampaign = $("view-create-campaign");
-  if (viewCampaigns) viewCampaigns.hidden = view !== "campaigns";
+  if (viewCampaigns) viewCampaigns.hidden = true;
   if (viewMembers) viewMembers.hidden = view !== "members";
   if (viewAds) viewAds.hidden = view !== "ads";
   if (viewCreateCampaign)
@@ -121,7 +126,7 @@ function showView(view) {
   if (navAds && navAds.classList)
     navAds.classList.toggle("active", view === "ads");
 
-  if (view === "campaigns") loadWorkspaceCampaigns(activeWs);
+  if (view === "campaigns") openWorkspaceCampaigns(activeWs);
   if (view === "ads") loadAds(activeWs, currentManage);
   if (view === "create-campaign") initCampaignWizard();
 }
@@ -376,7 +381,7 @@ async function loadWorkspace() {
 
   // Check Google Ads status in background for sidebar badge
   loadAds(id, manage);
-  if (currentView === "campaigns") loadWorkspaceCampaigns(id);
+  if (currentView === "campaigns") openWorkspaceCampaigns(id);
 
   /* Invite roles */
   $("invite-role").replaceChildren();
@@ -2250,6 +2255,7 @@ async function loadWorkspacesOnBoot() {
 }
 
 initMeta();
+initCampaignPlatforms();
 const boot = request("/api/me")
   .then((data) => renderUser(data.user))
   .catch(() => {

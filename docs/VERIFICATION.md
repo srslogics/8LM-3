@@ -85,3 +85,17 @@ were inspected. All eight Google/Meta browser flows passed; 43 unit checks passe
 (21 opt-in checks skipped). One initial browser run timed out during Shopping boot;
 the complete rerun passed. External Google font loading was removed because the
 application uses system fonts. Feature editor layouts retain scoped styles.
+
+## Campaign platform routing (2026-11-09)
+
+Campaigns now exposes Google Ads and Meta Ads platform selectors. Without an
+explicit choice, a workspace with Meta connected and no selected Google account
+opens Meta. Explicit choices are kept per workspace during the session; workspace
+names are not used for routing. Meta displays its own reporting, imports, drafts,
+publication history and campaign builder under the Campaigns navigation item.
+Requests are guarded against stale workspace/view changes. Integration navigation
+continues to open each provider directly.
+
+All eight browser workflows passed, including Google builders, Meta-only automatic
+routing, switching providers, the correct Create campaign flow, and Viewer access.
+Unit suite: 43 passed, 21 opt-in checks skipped. No database or Ads API changes.

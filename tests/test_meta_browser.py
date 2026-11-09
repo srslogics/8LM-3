@@ -42,6 +42,10 @@ def test_meta_dashboard_and_builder(role, objective):
                     "invites": [],
                     "activity": [],
                 }
+            elif path.endswith("/ads/campaigns"):
+                result = {"campaigns": [], "metrics": {}, "currency_code": "INR"}
+            elif path.endswith("/campaigns/drafts"):
+                result = {"drafts": []}
             elif path.endswith("/ads"):
                 result = {"ads": None, "oauth": None, "oauth_ready": False, "api_configured": False}
             elif path.endswith("/meta"):
@@ -111,9 +115,18 @@ def test_meta_dashboard_and_builder(role, objective):
         page.goto(os.environ.get("TEST_BASE_URL", "http://localhost:8021"))
         page.locator("#workspace-title").get_by_text("Members & access", exact=True).wait_for()
         page.screenshot(path=f"/tmp/8lm-shell-desktop-{role.lower()}.png", full_page=True)
-        page.locator("#nav-meta").click()
+        page.locator("#nav-campaigns").click()
+        page.get_by_text("Studio traffic", exact=True).wait_for()
+        assert page.locator("#campaign-platform-meta").get_attribute("aria-pressed") == "true"
+        assert page.locator("#meta-page-title").inner_text() == "Campaigns · Meta Ads"
+        assert page.locator("#create-campaign-open-btn").is_hidden()
+        page.locator("#campaign-platform-google").click()
+        page.locator("#view-campaigns").wait_for()
+        assert page.locator("#view-meta").is_hidden()
+        page.locator("#campaign-platform-meta").click()
         page.get_by_text("Studio traffic", exact=True).wait_for()
         assert "10.50" in page.locator("#meta-kpis").inner_text()
+        page.screenshot(path=f"/tmp/8lm-campaigns-platforms-{role.lower()}.png", full_page=True)
         if role == "Viewer":
             assert page.locator("#meta-connect").is_hidden()
             assert page.locator("#meta-create").is_hidden()
