@@ -77,3 +77,10 @@ Users, hashes, sessions, memberships, OAuth grants and campaign records stay in 
 - [API contract and compatibility](docs/API.md)
 
 The nine-step builder supports Search, standard non-retail Performance Max, Demand Gen image ads, responsive Display ads, and standard Shopping campaigns. Each draft is validated and published paused after confirmation. Image formats reuse assets in the selected Google Ads account; Shopping requires a linked Merchant Center feed. Standard Video opens a Google Ads handoff. See [campaign support and requirements](docs/CAMPAIGN_TYPES.md). Live Google acceptance must be checked with an authorized account after deployment.
+
+### Meta Ads
+
+Workspace-scoped Meta account connection, campaign reporting/import selection, and
+reviewed paused website-traffic publishing are available in the Meta Ads tab.
+See [Meta Ads setup, supported formats and recovery](docs/META_ADS.md) for Render
+variables, permissions, roles and live verification steps.

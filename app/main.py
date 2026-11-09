@@ -10,15 +10,17 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, campaigns, google, workspaces
+from app.api import auth, campaigns, google, meta, workspaces
 from app.core.config import ROOT, Settings
 from app.core.errors import AppError
 from app.core.middleware import SecurityMiddleware
 from app.db.database import Database
 from app.integrations.google_ads import GoogleAdsClient
+from app.integrations.meta_ads import MetaAdsClient
 from app.services.auth import AuthService
 from app.services.campaigns import CampaignService
 from app.services.google_connection import GoogleConnectionService
+from app.services.meta_ads import MetaService
 from app.services.rate_limit import AuthRateLimit
 from app.services.workspaces import WorkspaceService
 
@@ -34,9 +36,12 @@ class Services:
     connection: GoogleConnectionService
     campaigns: CampaignService
     rate_limit: AuthRateLimit
+    meta: MetaService
 
 
-def create_app(settings: Settings | None = None, google_transport=None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None, google_transport=None, meta_transport=None
+) -> FastAPI:
     settings = settings or Settings()
 
     @asynccontextmanager
@@ -44,9 +49,14 @@ def create_app(settings: Settings | None = None, google_transport=None) -> FastA
         db = Database(settings)
         await db.open()
         try:
-            async with httpx.AsyncClient(
-                timeout=25, follow_redirects=False, transport=google_transport
-            ) as http:
+            async with (
+                httpx.AsyncClient(
+                    timeout=25, follow_redirects=False, transport=google_transport
+                ) as http,
+                httpx.AsyncClient(
+                    timeout=25, follow_redirects=False, transport=meta_transport
+                ) as meta_http,
+            ):
                 workspace_service = WorkspaceService(db)
                 google_client = GoogleAdsClient(settings, http)
                 connection = GoogleConnectionService(db, workspace_service, google_client, settings)
@@ -58,6 +68,9 @@ def create_app(settings: Settings | None = None, google_transport=None) -> FastA
                     connection,
                     CampaignService(db, workspace_service, connection, google_client),
                     AuthRateLimit(db),
+                    MetaService(
+                        db, workspace_service, MetaAdsClient(settings, meta_http), settings
+                    ),
                 )
                 yield
         finally:
@@ -97,7 +110,7 @@ def create_app(settings: Settings | None = None, google_transport=None) -> FastA
         return JSONResponse({"error": "Something went wrong. Please try again."}, 500)
 
     application.add_middleware(SecurityMiddleware, settings=settings)
-    for router in (auth.router, google.router, workspaces.router, campaigns.router):
+    for router in (auth.router, google.router, workspaces.router, campaigns.router, meta.router):
         application.include_router(router)
 
     @application.get("/health", tags=["Operations"])

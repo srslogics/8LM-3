@@ -72,6 +72,9 @@ let currentView = "members";
 
 function showView(view) {
   currentView = view;
+  if ($("view-meta")) $("view-meta").hidden = view !== "meta";
+  if ($("nav-meta")) $("nav-meta").classList.toggle("active", view === "meta");
+  if (view === "meta") loadMeta();
   const viewCampaigns = $("view-campaigns");
   const viewMembers = $("view-members");
   const viewAds = $("view-ads");
@@ -2186,6 +2189,8 @@ async function loadWorkspacesOnBoot() {
   const params = new URLSearchParams(location.hash.slice(1));
   const token = params.get("invite");
   const oauth = params.get("oauth");
+  const metaOAuth = params.get("meta");
+  const metaOAuthError = params.get("meta_error");
   const oauthErr = params.get("oauth_error");
   let preferred = params.get("workspace");
 
@@ -2209,14 +2214,18 @@ async function loadWorkspacesOnBoot() {
     );
   }
 
+  if (metaOAuth || metaOAuthError) { history.replaceState({}, "", location.pathname); toast(metaOAuthError || "Meta connected. Select your advertising account.", metaOAuthError ? "error" : "success"); }
   await loadWorkspaces(preferred);
-  if (oauth === "success") {
+  if (metaOAuth || metaOAuthError) {
+    showView("meta");
+  } else if (oauth === "success") {
     showView("ads");
   } else {
     showView("members");
   }
 }
 
+initMeta();
 const boot = request("/api/me")
   .then((data) => renderUser(data.user))
   .catch(() => {

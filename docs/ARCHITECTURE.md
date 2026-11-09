@@ -52,3 +52,11 @@ The atomic Google mutation uses channel-specific builders in app/integrations/ca
 The restored nine-step builder remains in public/. JavaScript executes browser interactions; Python replaces the backend. Supported fields produce a validated campaign draft for one of five supported types; a separate confirmation publishes it paused. Unsupported advanced controls remain disabled. Browser fixtures cover all nine steps; integration tests cover real API/database behavior separately.
 
 No microservices, Redis, ORM, frontend framework or background queue is added. Email verification, recovery, delivery and MFA remain unimplemented. Dependencies are locked in uv.lock; requirements.txt is a hash-pinned production export.
+
+## Meta Ads boundary
+
+Meta uses `app/api/meta.py`, `meta_schemas.py`, `app/services/meta_ads.py` and
+`app/integrations/meta_ads.py`; its frontend is `public/meta.js`. Migration 011 adds
+workspace-scoped encrypted connections, hashed OAuth states, selected accounts,
+tracked campaigns and durable publication steps. Meta changes do not reuse Google
+tokens or modify the Google campaign wizard. See [Meta setup and recovery](META_ADS.md).

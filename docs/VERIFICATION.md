@@ -33,3 +33,20 @@ Not verified: live Google campaign acceptance, production Render runtime cutover
 - Ruff, Python compilation, JavaScript syntax and diff whitespace checks passed.
 
 Google HTTP responses are simulated. Live Google validation/acceptance, production deployment and real creative/feed eligibility remain unverified. No live ads were created and these changes have not been pushed.
+
+## Meta Ads integration (2026-11-09)
+
+- `python -m pytest --integration -q`: **51 passed, 7 browser tests skipped** on a
+  disposable local PostgreSQL 17 database; both database URLs explicitly isolated.
+- Browser suite: **7 passed** (five existing Google builders, Meta Owner and Viewer).
+- Meta coverage: session-bound OAuth and replay denial, scope rejection, encrypted
+  storage, expiry, workspace and role enforcement, account/asset binding, reporting
+  failure visibility, campaign import validation, four-step paused publication,
+  definite failure/resume, lost response/reconciliation, unresolved response without
+  resend, concurrent publication retries, pagination host restriction and log redaction.
+- Ruff lint/format, Python compilation, JS syntax, lock consistency and diff checks pass.
+
+Meta Graph responses and browser API responses are simulated. PostgreSQL and API
+integration routes are real. No live Meta token, reporting request or ad creation
+was tested: these require the configured Meta app and user authorization. Production
+Render deployment and external API acceptance must be checked after deployment.

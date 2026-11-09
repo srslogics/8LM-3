@@ -28,3 +28,23 @@ ENABLE_API_DOCS=true exposes /openapi.json locally with typed request schemas. R
 Campaign creation uses a discriminated `channel` contract: Search, Performance Max, Demand Gen, Display, or Shopping. See `app/api/campaign_types.py` and OpenAPI for exact required fields. Non-applicable fields are rejected. Existing Search JSON is unchanged.
 
 `GET /api/workspaces/{wid}/ads/creative-resources/images` and `/audiences` return `{customer_id, items}` for the selected account, limited to 200 results. Workspace editors and publishers can read these resources. Requests use the workspace OAuth connection and manager ID; browser callers never supply credentials. Asset/audience references must belong to the draft account. Google image metadata is checked again before validation and publication.
+
+## Meta Ads (workspace membership required)
+
+- `GET /api/workspaces/{wid}/auth/meta/url`: Owner/Admin; session-bound OAuth URL.
+- `GET /api/auth/meta/callback`: single-use state callback; redirects to Meta tab.
+- `GET /api/workspaces/{wid}/meta`: safe connection metadata and selected account.
+- `DELETE /api/workspaces/{wid}/meta`: Owner/Admin local disconnect.
+- `GET /api/workspaces/{wid}/meta/accounts`: Owner/Admin accessible accounts.
+- `POST /api/workspaces/{wid}/meta/account`: Owner/Admin; `{account_id: "act_…"}`.
+- `GET /api/workspaces/{wid}/meta/resources`: Editor+ accessible Pages/account images.
+- `GET /api/workspaces/{wid}/meta/campaigns?date_preset=last_30d`: member reporting;
+  also accepts last_7d, this_month, last_month. Null metrics mean unavailable.
+- `POST /api/workspaces/{wid}/meta/campaigns/import`: Editor+; `{campaign_ids: [...]}`.
+- `GET /api/workspaces/{wid}/meta/drafts`: member-visible draft/publication history.
+- `POST /api/workspaces/{wid}/meta/drafts`: Editor+; validated MetaDraft contract.
+- `POST /api/workspaces/{wid}/meta/drafts/{uuid}/publish`: Publisher+; 200 completed,
+  202 unconfirmed pending reconciliation, 400 definite rejection. Resources already
+  created are included in publication state. No unconfirmed mutation is resent.
+
+See [Meta integration](META_ADS.md) for exact supported fields and lifecycle.

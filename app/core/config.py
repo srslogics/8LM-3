@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     )
     google_ads_developer_token: SecretStr = SecretStr("")
     google_ads_api_version: str = "v26"
+    meta_app_id: str = ""
+    meta_app_secret: SecretStr = SecretStr("")
+    meta_login_config_id: str = ""
+    meta_api_version: str = Field("v26.0", pattern=r"^v[0-9]+\.[0-9]+$")
+    meta_token_encryption_key: SecretStr = SecretStr("")
     neon_branch: str = ""
     database_pool_size: int = Field(5, ge=2, le=30)
     enable_api_docs: bool = False
@@ -40,6 +45,15 @@ class Settings(BaseSettings):
         return (
             self.app_origin or self.render_external_url or f"http://localhost:{self.port}"
         ).rstrip("/")
+
+    @property
+    def meta_ready(self) -> bool:
+        return bool(
+            self.meta_app_id
+            and self.meta_app_secret.get_secret_value()
+            and self.meta_login_config_id
+            and self.meta_token_encryption_key.get_secret_value()
+        )
 
     @property
     def oauth_ready(self) -> bool:
