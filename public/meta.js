@@ -33,7 +33,7 @@ function initMeta() {
   $("meta-create").onclick = () => {
     if (!metaAccount) return;
     metaBuilderWs = activeWs; metaBuilderAccount = metaAccount.account_id;
-    $("meta-builder").reset(); $("meta-builder-error").textContent = "";
+    $("meta-builder").reset(); $("meta-objective").dispatchEvent(new Event("change")); $("meta-builder-error").textContent = "";
     $("meta-image-preview").hidden = true;
     $("meta-page").replaceChildren(new Option("Choose a Page", "")); $("meta-image").replaceChildren(new Option("Choose an image", ""));
     $("meta-builder-account").textContent = `${metaAccount.name} · ${metaAccount.account_id} · ${metaAccount.currency}`;
@@ -46,8 +46,19 @@ function initMeta() {
     const inputs = $("meta-builder").querySelectorAll(`[data-meta-step="${metaStep}"] input, [data-meta-step="${metaStep}"] select, [data-meta-step="${metaStep}"] textarea`);
     for (const input of inputs) if (!input.reportValidity()) return;
     if (metaStep === 3 && !$("meta-url").value.startsWith("https://")) { $("meta-builder-error").textContent = "Use an HTTPS landing page."; return; }
+    if (metaStep === 2) {
+      if (+$("meta-age-min").value > +$("meta-age-max").value) { $("meta-builder-error").textContent = "Minimum age must not exceed maximum age."; return; }
+      const start = $("meta-start").value, end = $("meta-end").value;
+      if (end && new Date(end) <= (start ? new Date(start) : new Date())) { $("meta-builder-error").textContent = "End time must be after the start time and in the future."; return; }
+    }
     $("meta-builder-error").textContent = ""; setMetaStep(metaStep + 1);
   };
+  $("meta-objective").onchange = () => {
+    const sales = $("meta-objective").value === "OUTCOME_SALES";
+    $("meta-sales-fields").hidden = !sales; $("meta-pixel").required = sales;
+    if (sales) loadMetaPixels();
+  };
+  $("meta-refresh-pixels").onclick = loadMetaPixels;
   $("meta-back").onclick = () => setMetaStep(metaStep - 1);
   $("meta-refresh-resources").onclick = loadMetaResources;
   $("meta-image").onchange = () => {
@@ -154,17 +165,23 @@ function renderMetaReport() {
 function metaFormData() {
   const data = Object.fromEntries(new FormData($("meta-builder")));
   data.no_special_category = $("meta-builder").elements.no_special_category.checked;
+  data.age_min = Number(data.age_min); data.age_max = Number(data.age_max);
+  for (const key of ["start_time", "end_time"]) data[key] = data[key] ? new Date(data[key]).toISOString() : null;
+  if (data.objective !== "OUTCOME_SALES") data.pixel_id = "";
   return data;
 }
 function metaReview(p, currency) {
-  return `Campaign: ${p.name}\nAd set: ${p.adset_name}\nAd: ${p.ad_name}\nObjective: Website traffic\nDaily budget: ${p.daily_budget} ${currency}\nCountry: ${p.country}\nAudience: Broad · ages 18–65+\nPlacement: Facebook Feed\nOptimisation: Link clicks\nPage: ${p.page_id}\nImage: ${p.image_hash}\nLanding page: ${p.final_url}\n\n${p.headline}\n${p.primary_text}\n${p.description || ""}\nCall to action: ${p.call_to_action}\n\nCampaign, ad set and ad will all be paused.`;
+  return `Campaign: ${p.name}\nAd set: ${p.adset_name}\nAd: ${p.ad_name}\nObjective: ${p.objective === "OUTCOME_SALES" ? "Website sales" : "Website traffic"}\nDaily budget: ${p.daily_budget} ${currency} · ${p.budget_scope === "CAMPAIGN" ? "Campaign" : "Ad set"} budget\nCountry: ${p.country}\nAudience: Ages ${p.age_min || 18}–${(p.age_max || 65) === 65 ? "65+" : p.age_max} · ${p.gender || "ALL"}\nPlacement: Facebook Feed\nOptimisation: ${p.objective === "OUTCOME_SALES" ? "Website conversions · " + p.pixel_id + " · " + p.conversion_event : "Link clicks"}\nStart: ${p.start_time || "When enabled"}\nEnd: ${p.end_time || "No end date"}\nPage: ${p.page_id}\nImage: ${p.image_hash}\nLanding page: ${p.final_url}\n\n${p.headline}\n${p.primary_text}\n${p.description || ""}\nCall to action: ${p.call_to_action}\n\nCampaign, ad set and ad will all be paused.`;
 }
 function setMetaStep(step) {
   metaStep = Math.max(1, Math.min(step, 4));
   document.querySelectorAll("[data-meta-step]").forEach(el => el.hidden = Number(el.dataset.metaStep) !== metaStep);
   for (let i = 1; i <= 4; i++) $("meta-step-label-" + i).classList.toggle("active", i === metaStep);
   $("meta-back").hidden = metaStep === 1; $("meta-next").hidden = metaStep === 4; $("meta-save").hidden = metaStep !== 4;
-  if (metaStep === 4) $("meta-review").textContent = metaReview(metaFormData(), metaAccount.currency);
+  if (metaStep === 4) {
+    const p = metaFormData(); $("meta-review").textContent = metaReview(p, metaAccount.currency);
+    $("meta-ad-preview").replaceChildren(metaText("span", "AD PREVIEW · FACEBOOK FEED", "subtle"), metaText("strong", $("meta-page").selectedOptions[0]?.textContent || "Facebook Page"), metaText("p", p.primary_text), metaText("strong", p.headline), metaText("p", p.description), metaText("span", p.final_url, "subtle"));
+  }
 }
 async function loadMetaResources() {
   const ws = activeWs, account = metaBuilderAccount;
@@ -199,7 +216,7 @@ async function loadMetaDrafts() {
         const button = metaText("button", ["UNKNOWN", "SENDING"].includes(d.state) ? "Check publication status" : d.state === "FAILED" ? "Resume publication" : "Publish paused", "btn btn-filled");
         button.disabled = d.account_id !== metaAccount?.account_id;
         button.onclick = async () => {
-          if (!["UNKNOWN", "SENDING"].includes(d.state) && !confirm(`Publish this traffic campaign to ${d.account_id} with daily budget ${d.payload.daily_budget} ${d.currency}? Campaign, ad set and ad will be paused. Existing completed steps are reused.`)) return;
+          if (!["UNKNOWN", "SENDING"].includes(d.state) && !confirm(`Publish this ${d.payload.objective === "OUTCOME_SALES" ? "sales" : "traffic"} campaign to ${d.account_id} with daily budget ${d.payload.daily_budget} ${d.currency}? Campaign, ad set and ad will be paused. Existing completed steps are reused.`)) return;
           button.disabled = true;
           try { const result = await metaCall(`/drafts/${d.id}/publish`, "POST", {}, ws); if (ws === activeWs) toast(result.ok ? "Meta campaign published paused." : result.error, result.ok ? "success" : "error"); }
           catch (e) { if (ws === activeWs) metaError(e); }
@@ -211,4 +228,18 @@ async function loadMetaDrafts() {
     }
     if (!result.drafts.length) $("meta-drafts").textContent = "No Meta drafts yet. Create a campaign to get started.";
   } catch (e) { if (ws === activeWs) metaError(e); }
+}
+
+async function loadMetaPixels() {
+  const ws = activeWs, account = metaBuilderAccount;
+  $("meta-pixels-status").textContent = "Loading accessible datasets…";
+  try {
+    const data = await metaCall("/pixels", "GET", undefined, ws);
+    if (ws !== activeWs || account !== metaBuilderAccount) return;
+    const previous = $("meta-pixel").value;
+    $("meta-pixel").replaceChildren(new Option("Choose a dataset", ""));
+    for (const pixel of data.pixels) $("meta-pixel").append(new Option(`${pixel.name} · ${pixel.id}`, pixel.id));
+    $("meta-pixel").value = previous;
+    $("meta-pixels-status").textContent = data.pixels.length ? "Choose the dataset configured for this website." : "No datasets available. Configure a pixel in Events Manager and grant this ad account access, then refresh.";
+  } catch (e) { if (ws === activeWs) $("meta-pixels-status").textContent = e.message; }
 }

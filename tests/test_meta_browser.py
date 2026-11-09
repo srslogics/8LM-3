@@ -10,8 +10,11 @@ from playwright.sync_api import sync_playwright
 pytestmark = pytest.mark.browser
 
 
-@pytest.mark.parametrize("role", ["Owner", "Viewer"])
-def test_meta_dashboard_and_builder(role):
+@pytest.mark.parametrize(
+    "role,objective",
+    [("Owner", "OUTCOME_TRAFFIC"), ("Owner", "OUTCOME_SALES"), ("Viewer", "OUTCOME_TRAFFIC")],
+)
+def test_meta_dashboard_and_builder(role, objective):
     with sync_playwright() as pw:
         browser = pw.chromium.launch(channel="chrome", headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1000})
@@ -71,6 +74,8 @@ def test_meta_dashboard_and_builder(role):
                     ],
                     "reporting_error": None,
                 }
+            elif path.endswith("/meta/pixels"):
+                result = {"pixels": [{"id": "66", "name": "Website dataset"}]}
             elif path.endswith("/meta/resources"):
                 result = {
                     "account_id": "act_99",
@@ -115,9 +120,13 @@ def test_meta_dashboard_and_builder(role):
             page.locator("#meta-create").click()
             page.locator("#meta-next").click()
             assert page.locator("#meta-name").is_visible()
+            page.locator("#meta-objective").select_option(objective)
             page.locator("#meta-name").fill("New traffic campaign")
             page.locator('[name="no_special_category"]').check()
             page.locator("#meta-next").click()
+            if objective == "OUTCOME_SALES":
+                page.locator("#meta-pixel").select_option("66")
+                page.locator("#meta-budget-scope").select_option("CAMPAIGN")
             page.locator("#meta-budget").fill("150.25")
             page.locator("#meta-next").click()
             page.locator("#meta-page").select_option("55")

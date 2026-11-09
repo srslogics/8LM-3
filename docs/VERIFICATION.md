@@ -50,3 +50,15 @@ Meta Graph responses and browser API responses are simulated. PostgreSQL and API
 integration routes are real. No live Meta token, reporting request or ad creation
 was tested: these require the configured Meta app and user authorization. Production
 Render deployment and external API acceptance must be checked after deployment.
+
+## Meta campaign editor expansion (2026-11-09)
+
+- Isolated PostgreSQL suite: 56 passed, 8 browser tests skipped.
+- Browser suite: 8 passed, including Traffic and Sales owner flows, viewer access,
+  and all five Google campaign builders.
+- Sales contract validates dataset requirement, age order, time-zone-aware dates
+  and future end date. Integration checks dataset account access, conversion event,
+  campaign budget placement and audience values in the outbound Graph requests.
+- Initial database run started before the disposable PostgreSQL container was
+  ready and failed setup; rerunning after startup passed. No production data used.
+- Live Meta Sales acceptance and tracking/event eligibility remain unverified.

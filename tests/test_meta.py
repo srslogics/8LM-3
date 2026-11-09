@@ -79,6 +79,8 @@ class MetaStub:
             return httpx.Response(
                 200, json={"data": [{"id": "55", "name": "Studio Page", "tasks": ["ADVERTISE"]}]}
             )
+        if path == "act_99/adspixels":
+            return httpx.Response(200, json={"data": [{"id": "66", "name": "Website dataset"}]})
         if path == "act_99/adimages":
             return httpx.Response(
                 200,
@@ -322,3 +324,53 @@ async def test_meta_pagination_stays_on_graph_and_redacts_secrets(caplog):
             )
     assert caught.value.uncertain
     assert "sensitive-token" not in str(caught.value)
+
+
+@pytest.mark.integration
+async def test_sales_campaign_budget_dataset_and_audience(meta_system):
+    import json
+
+    _, (owner, _, _), _, wid, stub = meta_system
+    await selected(owner, wid)
+    root = f"/api/workspaces/{wid}/meta"
+    p = {
+        **DRAFT,
+        "objective": "OUTCOME_SALES",
+        "pixel_id": "66",
+        "conversion_event": "PURCHASE",
+        "budget_scope": "CAMPAIGN",
+        "age_min": 25,
+        "age_max": 55,
+        "gender": "WOMEN",
+        "start_time": "2090-01-01T10:00:00Z",
+        "end_time": "2090-01-02T10:00:00Z",
+    }
+    assert (await owner.post(root + "/drafts", json={**p, "pixel_id": "999"})).status_code == 400
+    key = (await owner.post(root + "/drafts", json=p)).json()["draft"]["id"]
+    result = await owner.post(root + f"/drafts/{key}/publish", json={})
+    assert result.status_code == 200, result.text
+    campaign, adset = stub.posts[0][1], stub.posts[1][1]
+    assert campaign["objective"] == "OUTCOME_SALES" and campaign["daily_budget"] == "15025"
+    assert "daily_budget" not in adset and "bid_strategy" not in adset
+    assert adset["optimization_goal"] == "OFFSITE_CONVERSIONS"
+    assert json.loads(adset["promoted_object"]) == {
+        "pixel_id": "66",
+        "custom_event_type": "PURCHASE",
+    }
+    targeting = json.loads(adset["targeting"])
+    assert targeting["age_min"] == 25 and targeting["age_max"] == 55 and targeting["genders"] == [2]
+    assert adset["start_time"] and adset["end_time"]
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"objective": "OUTCOME_SALES"},
+        {"age_min": 50, "age_max": 25},
+        {"end_time": "2000-01-01T00:00:00Z"},
+        {"start_time": "2090-01-01T00:00:00"},
+    ],
+)
+def test_sales_and_schedule_requirements(changes):
+    with pytest.raises(ValidationError):
+        MetaDraft(**{**DRAFT, **changes})

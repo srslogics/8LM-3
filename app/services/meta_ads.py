@@ -148,6 +148,11 @@ class MetaService:
                 await self.db.run(f"DELETE FROM eightlm.{table} WHERE workspace_id=%s", wid)
             await self.workspaces.audit(wid, user, "Meta disconnected; local credentials removed")
 
+    async def pixels(self, wid, user):
+        async with self.workspaces.locked(wid, user, EDITORS):
+            account = await self.selected(wid)
+            return await self.client.pixels(await self.token(wid), account["account_id"])
+
     async def resources(self, wid, user):
         async with self.workspaces.locked(wid, user, EDITORS):
             account, token = await self.selected(wid), await self.token(wid)
@@ -215,6 +220,18 @@ class MetaService:
             r["hash"] for r in await self.client.images(token, account)
         }:
             raise AppError("Choose an image from the selected Meta ad account.")
+        if payload.get("objective") == "OUTCOME_SALES":
+            if payload.get("pixel_id") not in {
+                r["id"] for r in await self.client.pixels(token, account)
+            }:
+                raise AppError("Choose a dataset/pixel accessible from the selected Meta account.")
+        if payload.get("end_time"):
+            from datetime import datetime, timezone
+
+            if datetime.fromisoformat(payload["end_time"].replace("Z", "+00:00")) <= datetime.now(
+                timezone.utc
+            ):
+                raise AppError("The end date has passed. Save a new draft with a future schedule.")
         return token
 
     async def draft(self, wid, user, payload):
@@ -326,6 +343,6 @@ class MetaService:
                 ids["campaign"],
             )
             await self.workspaces.audit(
-                wid, user, "Published paused Meta traffic campaign " + ids["campaign"]
+                wid, user, "Published paused Meta campaign " + ids["campaign"]
             )
             return {"ok": True, "resources": ids, "status": "PAUSED"}

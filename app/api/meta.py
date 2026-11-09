@@ -52,6 +52,11 @@ async def disconnect(wid: int, request: Request, user: User):
     return {"ok": True}
 
 
+@router.get("/api/workspaces/{wid}/meta/pixels")
+async def pixels(wid: int, request: Request, user: User):
+    return {"pixels": await services(request).meta.pixels(wid, user)}
+
+
 @router.get("/api/workspaces/{wid}/meta/resources")
 async def resources(wid: int, request: Request, user: User):
     return await services(request).meta.resources(wid, user)

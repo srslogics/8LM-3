@@ -1,10 +1,13 @@
 # Meta Ads
 
 8LM supports workspace-scoped Meta authorization, active ad account selection,
-campaign reporting and campaign import selection. Its first publishing format is
-website traffic (OUTCOME_TRAFFIC), one ad set, one single-image ad, broad country
-targeting (India, US or UK), ages 18–65+, Facebook Feed and link-click optimization.
-Campaign, ad set and ad are created PAUSED. Instagram placements, other objectives,
+campaign reporting and campaign import selection. Publishing supports website traffic (OUTCOME_TRAFFIC) and website sales
+(OUTCOME_SALES), one ad set, one single-image ad, country targeting (India, US or UK),
+configurable ages 18–65+ and gender, and Facebook Feed. Traffic optimises link clicks;
+sales optimises website conversions using an accessible account pixel and a standard
+event. Budgets can be set at campaign or ad-set level. Optional start/end timestamps
+are stored with explicit time zones.
+Campaign, ad set and ad are created PAUSED. Instagram placements, objectives beyond Traffic/Sales,
 special ad categories and image uploads are not included in this builder. Existing
 Meta campaigns of other objectives can still be listed and reported.
 
@@ -107,3 +110,22 @@ concurrent retries, permissions, OAuth replay/session binding and encrypted toke
 checks the Google builders and Meta UI with browser API fixtures. Neither test
 suite creates live Meta ads. Before public release, verify a real OAuth connection,
 Page/image access, reporting and one paused publication using your configured app.
+
+
+## Expanded campaign editor
+
+The editor follows Campaign → Ad set → Ad creative → Review, with a persistent
+step rail on desktop. Manual setup exposes objective, dataset and conversion event,
+budget scope, dates, country, minimum/maximum age and gender. Review includes an ad
+copy preview and the full saved configuration. Dataset options come from the selected
+account's `/adspixels` edge and are validated again before draft save and publication.
+Users must configure tracking and event eligibility in Events Manager. Dataset
+visibility alone does not establish that conversion events are being received.
+
+Facebook Feed is the explicit placement supported here. Advantage+ shopping,
+customer acquisition rules, custom audiences, Instagram identities, special ad
+categories, A/B testing and other conversion destinations shown in the reference
+screens are not implemented. They are not presented as working toggles.
+Existing Traffic drafts retain their original defaults. JSON payloads carry the
+new settings without a schema migration. No remote campaigns are edited by this UI
+change; each publication remains paused and requires separate confirmation.

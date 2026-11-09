@@ -223,6 +223,9 @@ class MetaAdsClient:
             account + "/adimages", token, {"fields": "hash,name,url,width,height"}
         )
 
+    async def pixels(self, token, account):
+        return await self.list(account + "/adspixels", token, {"fields": "id,name"})
+
     async def campaigns(self, token, account):
         return await self.list(
             account + "/campaigns", token, {"fields": "id,name,objective,status,effective_status"}
@@ -279,7 +282,12 @@ def step_payload(step, p, name, ids, budget_minor):
     if step == "campaign":
         return {
             "name": name,
-            "objective": "OUTCOME_TRAFFIC",
+            "objective": p.get("objective", "OUTCOME_TRAFFIC"),
+            **(
+                {"daily_budget": budget_minor, "bid_strategy": "LOWEST_COST_WITHOUT_CAP"}
+                if p.get("budget_scope") == "CAMPAIGN"
+                else {}
+            ),
             "buying_type": "AUCTION",
             "status": "PAUSED",
             "special_ad_categories": [],
@@ -290,15 +298,38 @@ def step_payload(step, p, name, ids, budget_minor):
             "name": name,
             "campaign_id": ids["campaign"],
             "status": "PAUSED",
-            "daily_budget": budget_minor,
+            **({"daily_budget": budget_minor} if p.get("budget_scope") != "CAMPAIGN" else {}),
+            **({k: p[k] for k in ("start_time", "end_time") if p.get(k)}),
+            **(
+                {
+                    "promoted_object": {
+                        "pixel_id": p["pixel_id"],
+                        "custom_event_type": p.get("conversion_event", "PURCHASE"),
+                    }
+                }
+                if p.get("objective") == "OUTCOME_SALES"
+                else {}
+            ),
             "billing_event": "IMPRESSIONS",
-            "optimization_goal": "LINK_CLICKS",
+            "optimization_goal": "OFFSITE_CONVERSIONS"
+            if p.get("objective") == "OUTCOME_SALES"
+            else "LINK_CLICKS",
             "destination_type": "WEBSITE",
-            "bid_strategy": "LOWEST_COST_WITHOUT_CAP",
+            **(
+                {"bid_strategy": "LOWEST_COST_WITHOUT_CAP"}
+                if p.get("budget_scope") != "CAMPAIGN"
+                else {}
+            ),
             "targeting": {
                 "geo_locations": {"countries": [p["country"]]},
-                "age_min": 18,
-                "age_max": 65,
+                "age_min": p.get("age_min", 18),
+                "age_max": p.get("age_max", 65),
+                "targeting_automation": {"advantage_audience": 0},
+                **(
+                    {"genders": [1 if p["gender"] == "MEN" else 2]}
+                    if p.get("gender", "ALL") != "ALL"
+                    else {}
+                ),
                 "publisher_platforms": ["facebook"],
                 "facebook_positions": ["feed"],
                 "device_platforms": ["mobile", "desktop"],
