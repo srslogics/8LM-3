@@ -70,8 +70,30 @@ async function workspaceRequest(path, method, body) {
    ══════════════════════════════════════════════════ */
 let currentView = "members";
 
+function closeNavigation(restoreFocus = false) {
+  document.body.classList.remove("nav-menu-open");
+  $("main-content").inert = false;
+  $("nav-menu-toggle").setAttribute("aria-expanded", "false");
+  $("nav-menu-toggle").setAttribute("aria-label", "Open navigation");
+  if (restoreFocus) $("nav-menu-toggle").focus();
+}
+$("nav-menu-toggle").onclick = () => {
+  const open = document.body.classList.toggle("nav-menu-open");
+  $("main-content").inert = open;
+  $("nav-menu-toggle").setAttribute("aria-expanded", String(open));
+  $("nav-menu-toggle").setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+};
+$("nav-menu-backdrop").onclick = () => closeNavigation(true);
+window.matchMedia("(min-width: 769px)").addEventListener("change", () => closeNavigation());
+document.addEventListener("keydown", event => { if (event.key === "Escape" && document.body.classList.contains("nav-menu-open")) closeNavigation(true); });
+$("sidebar").addEventListener("click", event => { if (event.target.closest(".sidebar-nav-item, .sidebar-btn")) closeNavigation(); });
 function showView(view) {
+  closeNavigation();
   currentView = view;
+  for (const item of document.querySelectorAll("#sidebar .sidebar-nav-item")) {
+    if (item.dataset.view === (view === "create-campaign" ? "campaigns" : view)) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  }
   if (view !== "meta") document.body.classList.remove("me-is-editing");
   if ($("view-meta")) $("view-meta").hidden = view !== "meta";
   if ($("nav-meta")) $("nav-meta").classList.toggle("active", view === "meta");
@@ -337,7 +359,8 @@ async function loadWorkspace() {
   currentRole = w.role;
 
   $("nav-ws-name").textContent = w.name;
-  $("workspace-title").textContent = w.name;
+  $("workspace-title").textContent = "Members & access";
+  $("workspace-breadcrumb").textContent = "Workspace / " + w.name;
   $("your-role").textContent = w.role;
   $("your-role").className = roleChipClass(w.role);
   $("workspace-actions").hidden = !manage;

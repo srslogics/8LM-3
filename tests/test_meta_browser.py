@@ -109,6 +109,8 @@ def test_meta_dashboard_and_builder(role, objective):
 
         page.route("**/api/**", api)
         page.goto(os.environ.get("TEST_BASE_URL", "http://localhost:8021"))
+        page.locator("#workspace-title").get_by_text("Members & access", exact=True).wait_for()
+        page.screenshot(path=f"/tmp/8lm-shell-desktop-{role.lower()}.png", full_page=True)
         page.locator("#nav-meta").click()
         page.get_by_text("Studio traffic", exact=True).wait_for()
         assert "10.50" in page.locator("#meta-kpis").inner_text()
@@ -179,6 +181,20 @@ def test_meta_dashboard_and_builder(role, objective):
             assert drafts[0]["payload"]["no_special_category"] is True
         page.set_viewport_size({"width": 390, "height": 844})
         assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+        assert not page.locator("#sidebar").is_visible()
+        page.locator("#nav-menu-toggle").click()
+        assert page.locator("#sidebar").is_visible()
+        assert page.locator("#nav-menu-toggle").get_attribute("aria-expanded") == "true"
+        page.keyboard.press("Escape")
+        assert not page.locator("#sidebar").is_visible()
+        page.locator("#nav-menu-toggle").click()
+        page.locator("#nav-members").click()
+        assert not page.locator("#sidebar").is_visible()
+        assert page.locator("#view-members").is_visible()
+        page.screenshot(path=f"/tmp/8lm-shell-mobile-{role.lower()}.png", full_page=True)
+        page.locator("#nav-menu-toggle").click()
+        page.locator("#nav-meta").click()
+        page.get_by_text("Studio traffic", exact=True).wait_for()
         page.screenshot(path=f"/tmp/8lm-meta-{role.lower()}.png", full_page=True)
         assert not errors, errors
         assert not unknown, unknown

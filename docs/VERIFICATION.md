@@ -74,3 +74,14 @@ Render deployment and external API acceptance must be checked after deployment.
   draft-only saving and separate paused publication.
 - Unit suite: 43 passed, 21 opt-in integration/browser checks skipped. Backend
   publishing contracts and operations are unchanged by this layout rebuild.
+
+## Shared application layout and navigation (2026-11-09)
+
+The shared shell now has a dedicated shell.css, consistent typography/spacing and a
+mobile drawer instead of a wrapped sidebar. Browser coverage exercises opening,
+Escape dismissal, selected-page navigation and menu close on selection. The member
+page identifies its purpose and workspace separately. Desktop/mobile member screens
+were inspected. All eight Google/Meta browser flows passed; 43 unit checks passed
+(21 opt-in checks skipped). One initial browser run timed out during Shopping boot;
+the complete rerun passed. External Google font loading was removed because the
+application uses system fonts. Feature editor layouts retain scoped styles.
