@@ -99,3 +99,13 @@ continues to open each provider directly.
 All eight browser workflows passed, including Google builders, Meta-only automatic
 routing, switching providers, the correct Create campaign flow, and Viewer access.
 Unit suite: 43 passed, 21 opt-in checks skipped. No database or Ads API changes.
+
+## Account access redesign (2026-11-09)
+
+Login and signup use a scoped auth.css with a desktop identity/form split and a
+compact mobile identity bar. Form IDs, authentication endpoints and signup rules
+are unchanged. Desktop login and mobile signup screenshots were visually checked.
+Two new browser cases verify mode switching, signup minimum password length,
+password visibility, request payloads and server error presentation at 1440px and
+390px. Combined browser suite: 10 passed. Unit suite: 43 passed, 23 opt-in checks
+skipped. Ruff lint/format and diff checks passed. No live accounts created by tests.

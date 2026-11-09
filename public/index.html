@@ -23,6 +23,7 @@
     <meta name="twitter:image" content="https://eightlm-3-g5wy.onrender.com/8lm-social-v1.png" />
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/shell.css" />
+    <link rel="stylesheet" href="/auth.css" />
     <script src="/campaign-types.js" defer></script>
     <script src="/meta-editor.js" defer></script>
     <script src="/meta.js" defer></script>
@@ -33,12 +34,14 @@
   <body>
     <!-- ===================== AUTH SCREEN ===================== -->
     <div id="auth-screen">
+      <aside class="auth-identity" aria-label="8LM advertising workspace">
+        <div class="auth-identity-top"><span class="auth-identity-symbol">8</span><span>8LM CONSOLE</span></div>
+        <div class="auth-wordmark">8LM<span>.</span><p>Advertising workspace</p></div>
+        <div class="auth-identity-bottom"><div><span>PLATFORMS</span><p>Google Ads <i aria-hidden="true">/</i> Meta Ads</p></div><span>© 2026 8LM</span></div>
+      </aside>
+      <div class="auth-form-pane">
       <div class="auth-card">
-        <div class="auth-brand">
-          <div class="auth-brand-mark">8L</div>
-          <div class="auth-brand-name">8LM <span>Console</span></div>
-        </div>
-
+        <p class="auth-section-label">ACCOUNT ACCESS</p>
         <section id="auth">
           <h1 id="heading">Log in</h1>
           <p class="auth-subtitle" id="intro">
@@ -68,6 +71,7 @@
                   autocomplete="current-password"
                   required
                   maxlength="128"
+                  aria-describedby="hint"
                 />
                 <button
                   id="show"
@@ -92,6 +96,7 @@
 
           <p id="status" role="status" aria-live="polite"></p>
         </section>
+      </div>
       </div>
     </div>
 
