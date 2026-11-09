@@ -72,6 +72,7 @@ let currentView = "members";
 
 function showView(view) {
   currentView = view;
+  if (view !== "meta") document.body.classList.remove("me-is-editing");
   if ($("view-meta")) $("view-meta").hidden = view !== "meta";
   if ($("nav-meta")) $("nav-meta").classList.toggle("active", view === "meta");
   if (view === "meta") loadMeta();

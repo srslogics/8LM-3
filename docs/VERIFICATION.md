@@ -62,3 +62,15 @@ Render deployment and external API acceptance must be checked after deployment.
 - Initial database run started before the disposable PostgreSQL container was
   ready and failed setup; rerunning after startup passed. No production data used.
 - Live Meta Sales acceptance and tracking/event eligibility remain unverified.
+
+## Meta screenshot layout rebuild (2026-11-09)
+
+- Objective/manual setup onboarding and full-screen Campaign → Ad set → Ad editor
+  replace the previous inline wizard. Desktop hierarchy, inspector, sticky header,
+  fixed footer and mobile Review layout were inspected in browser screenshots.
+- Browser checks: eight passed, including five Google regressions and the Meta
+  Traffic/Sales/Viewer flows. After correcting focus scrolling, all three Meta
+  checks passed again. Tests assert header/footer placement, live age errors,
+  draft-only saving and separate paused publication.
+- Unit suite: 43 passed, 21 opt-in integration/browser checks skipped. Backend
+  publishing contracts and operations are unchanged by this layout rebuild.

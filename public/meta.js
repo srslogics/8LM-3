@@ -77,10 +77,12 @@ function initMeta() {
     try { await metaCall("/drafts", "POST", metaFormData(), ws); if (ws === activeWs) { $("meta-builder-cancel").click(); await loadMetaDrafts(); toast("Meta draft saved. Review before publishing.", "success"); } }
     catch (err) { if (ws === activeWs) $("meta-builder-error").textContent = err.message; } finally { $("meta-save").disabled = false; }
   };
+  initMetaEditor();
 }
 
 async function loadMeta() {
   if (!activeWs) return;
+  document.body.classList.remove("me-is-editing");
   const ws = activeWs, generation = ++metaGeneration;
   metaAccount = null; metaRows = []; metaSelected = new Set();
   $("meta-builder").hidden = true; $("meta-dashboard").hidden = true; $("meta-create").hidden = true;
@@ -178,6 +180,7 @@ function setMetaStep(step) {
   document.querySelectorAll("[data-meta-step]").forEach(el => el.hidden = Number(el.dataset.metaStep) !== metaStep);
   for (let i = 1; i <= 4; i++) $("meta-step-label-" + i).classList.toggle("active", i === metaStep);
   $("meta-back").hidden = metaStep === 1; $("meta-next").hidden = metaStep === 4; $("meta-save").hidden = metaStep !== 4;
+  if (typeof updateMetaEditor === "function") updateMetaEditor();
   if (metaStep === 4) {
     const p = metaFormData(); $("meta-review").textContent = metaReview(p, metaAccount.currency);
     $("meta-ad-preview").replaceChildren(metaText("span", "AD PREVIEW · FACEBOOK FEED", "subtle"), metaText("strong", $("meta-page").selectedOptions[0]?.textContent || "Facebook Page"), metaText("p", p.primary_text), metaText("strong", p.headline), metaText("p", p.description), metaText("span", p.final_url, "subtle"));

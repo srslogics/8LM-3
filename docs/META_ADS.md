@@ -129,3 +129,18 @@ screens are not implemented. They are not presented as working toggles.
 Existing Traffic drafts retain their original defaults. JSON payloads carry the
 new settings without a schema migration. No remote campaigns are edited by this UI
 change; each publication remains paused and requires separate confirmation.
+
+## Ads Manager style editor
+
+Campaign creation opens a separate full-screen editor with objective selection and
+manual setup onboarding. The campaign/ad-set/ad tree, breadcrumb and Edit/Review
+tabs navigate the same saved form. Settings are grouped into cards for campaign
+details, A/B test status, audience segment information, special categories,
+conversion, dynamic creative status, budget/schedule, audience, transparency,
+placements, identity, ad creative and destination. The inspector checks real
+required fields, age ordering, schedule and HTTPS; Edit links focus the relevant
+field. This local validation does not predict Meta's final API approval. No Meta
+campaign score is invented. Unsupported features are explicitly identified.
+
+The footer stays visible while settings scroll. Closing the editor returns to the
+workspace; draft saving and paused publication remain separate actions.
