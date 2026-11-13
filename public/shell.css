@@ -57,3 +57,131 @@ body { background:var(--gcp-body-bg); -webkit-font-smoothing:antialiased; }
 .campaign-platform-buttons button.active { background:#eaf3ed; color:#285847; }
 .campaign-platform-buttons button:focus-visible { outline:3px solid #a6c9b5; }
 #campaign-platform-status:not(:empty) { padding:20px 0; }
+
+/* Align action controls with their inputs, independently of label height. */
+#invite-form .invite-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px) auto;
+  gap: 16px;
+  align-items: end;
+}
+#invite-form .field {
+  min-width: 0;
+  margin: 0;
+}
+#invite-form .field label {
+  display: block;
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+#invite-form input,
+#invite-form #invite-role,
+#main-content #invite-form button[type="submit"] {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+}
+#account-selection-form .inline-controls {
+  align-items: stretch;
+  gap: 12px;
+}
+#account-selection-form .inline-controls > *,
+#main-content #account-selection-form .inline-controls > .btn {
+  min-height: 44px;
+  height: 44px;
+  margin: 0;
+}
+#account-selection-form > label {
+  display: block;
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+#view-meta .meta-account-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: end;
+  gap: 12px;
+}
+#view-meta .meta-account-row > label {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.5;
+}
+#view-meta .meta-account-row select {
+  margin-top: 8px;
+}
+#view-meta .meta-account-row select,
+#main-content #view-meta .meta-account-row > .btn {
+  min-height: 44px;
+  height: 44px;
+}
+#view-meta .meta-account-row > p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+#view-meta .meta-report-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 200px) auto;
+  align-items: end;
+  gap: 16px;
+}
+.meta-report-toolbar h2 {
+  align-self: center;
+  margin: 0;
+}
+.meta-report-toolbar label {
+  display: block;
+  min-width: 0;
+  line-height: 1.5;
+}
+.meta-report-toolbar select {
+  margin-top: 8px;
+}
+#view-meta .meta-report-toolbar select,
+#main-content #view-meta .meta-report-toolbar > .btn {
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+}
+#main-content .form-actions > .btn {
+  min-height: 40px;
+  margin: 0;
+}
+@media (max-width: 900px) {
+  #invite-form .invite-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
+  }
+  #invite-form .invite-grid > .field:first-child {
+    grid-column: 1 / -1;
+  }
+  #view-meta .meta-account-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  #view-meta .meta-account-row > label {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 650px) {
+  #invite-form .invite-grid,
+  #view-meta .meta-account-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #invite-form .invite-grid > *,
+  #view-meta .meta-account-row > * {
+    grid-column: 1;
+    width: 100%;
+  }
+  #account-selection-form .inline-controls {
+    align-items: stretch;
+  }
+  #account-selection-form .inline-controls > * {
+    width: 100%;
+  }
+  #view-meta .meta-report-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .meta-report-toolbar h2 {
+    grid-column: 1 / -1;
+  }
+}

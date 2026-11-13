@@ -144,6 +144,18 @@ def test_nine_step_builder_and_publication(channel):
         page.locator("#your-role").filter(has_text="Owner").wait_for()
         page.locator("#nav-ads").click()
         page.get_by_text("google@example.com", exact=True).wait_for()
+        if channel == "Search":
+            for width in (1440, 1024, 820, 768, 390):
+                page.set_viewport_size({"width": width, "height": 1000})
+                select = page.locator("#google-account-select").bounding_box()
+                for button in page.locator("#account-selection-form button").all():
+                    rect = button.bounding_box()
+                    assert abs(rect["height"] - select["height"]) <= 1
+                    if width > 650:
+                        assert abs(rect["y"] - select["y"]) <= 1
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+            page.set_viewport_size({"width": 1440, "height": 1000})
+
         page.locator("#nav-campaigns").click()
         page.locator("#create-campaign-open-btn").click()
         page.locator("#wizard-pane-1").wait_for(state="visible")

@@ -78,6 +78,17 @@ def test_meta_dashboard_and_builder(role, objective):
                     ],
                     "reporting_error": None,
                 }
+            elif path.endswith("/meta/accounts"):
+                result = {
+                    "accounts": [
+                        {
+                            "id": "act_99",
+                            "name": "Studio Meta",
+                            "currency": "INR",
+                            "account_status": 1,
+                        }
+                    ]
+                }
             elif path.endswith("/meta/pixels"):
                 result = {"pixels": [{"id": "66", "name": "Website dataset"}]}
             elif path.endswith("/meta/resources"):
@@ -114,6 +125,19 @@ def test_meta_dashboard_and_builder(role, objective):
         page.route("**/api/**", api)
         page.goto(os.environ.get("TEST_BASE_URL", "http://localhost:8021"))
         page.locator("#workspace-title").get_by_text("Members & access", exact=True).wait_for()
+        if role == "Owner":
+            for width in (1440, 1024, 820, 768, 390):
+                page.set_viewport_size({"width": width, "height": 1000})
+                email = page.locator("#invite-email").bounding_box()
+                select = page.locator("#invite-role").bounding_box()
+                button = page.locator('#invite-form button[type="submit"]').bounding_box()
+                assert abs(select["height"] - button["height"]) <= 1
+                if width > 650:
+                    assert abs(select["y"] - button["y"]) <= 1
+                if width > 900:
+                    assert abs(email["y"] - select["y"]) <= 1
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+            page.set_viewport_size({"width": 1440, "height": 1000})
         page.screenshot(path=f"/tmp/8lm-shell-desktop-{role.lower()}.png", full_page=True)
         page.locator("#nav-campaigns").click()
         page.get_by_text("Studio traffic", exact=True).wait_for()
@@ -125,8 +149,31 @@ def test_meta_dashboard_and_builder(role, objective):
         assert page.locator("#view-meta").is_hidden()
         page.locator("#campaign-platform-meta").click()
         page.get_by_text("Studio traffic", exact=True).wait_for()
+        for width in (1440, 1024, 820, 768, 390):
+            page.set_viewport_size({"width": width, "height": 1000})
+            select = page.locator("#meta-range").bounding_box()
+            button = page.locator("#meta-refresh").bounding_box()
+            assert abs(select["y"] - button["y"]) <= 1
+            assert abs(select["height"] - button["height"]) <= 1
+            assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+        page.set_viewport_size({"width": 1440, "height": 1000})
         assert "10.50" in page.locator("#meta-kpis").inner_text()
         page.screenshot(path=f"/tmp/8lm-campaigns-platforms-{role.lower()}.png", full_page=True)
+        if role == "Owner":
+            page.locator("#meta-change").click()
+            page.locator("#meta-accounts-status").get_by_text(
+                "Choose an active account", exact=False
+            ).wait_for()
+            for width in (1440, 1024, 820, 768, 390):
+                page.set_viewport_size({"width": width, "height": 1000})
+                select = page.locator("#meta-account").bounding_box()
+                buttons = page.locator("#meta-account-form button")
+                for button in buttons.all():
+                    assert abs(button.bounding_box()["height"] - select["height"]) <= 1
+                if width > 900:
+                    assert abs(buttons.first.bounding_box()["y"] - select["y"]) <= 1
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+            page.set_viewport_size({"width": 1440, "height": 1000})
         if role == "Viewer":
             assert page.locator("#meta-connect").is_hidden()
             assert page.locator("#meta-create").is_hidden()
