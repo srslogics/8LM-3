@@ -109,3 +109,31 @@ Two new browser cases verify mode switching, signup minimum password length,
 password visibility, request payloads and server error presentation at 1440px and
 390px. Combined browser suite: 10 passed. Unit suite: 43 passed, 23 opt-in checks
 skipped. Ruff lint/format and diff checks passed. No live accounts created by tests.
+
+## Full internal API and browser lifecycle audit (2026-11-13)
+
+An isolated PostgreSQL database was used for the audit. Instrumentation recorded a
+successful response for all 42 registered route/method combinations across auth,
+workspace membership/invitations, Google and Meta accounts, resources, reporting,
+imports, drafts, publication, disconnect and health. The expanded suite passed
+59 checks. Its 12 browser checks were skipped in that API-only run.
+
+The full browser run passed 12 checks, including an actual signup → workspace
+creation → Google/Meta connection screens → logout → login → refresh → logout
+journey against Python/PostgreSQL. The existing Ads browser tests use API fixtures.
+A subsequent auth regression run passed four checks, including a delayed workspace
+response arriving after logout. Google/Meta HTTP responses in integration tests are
+simulated. These results do not establish production OAuth or live ad acceptance.
+
+Fixes include visible retry UI when the initial workspace list fails, invalidating
+late workspace loads after logout, clearing workspace privilege/provider UI state
+on logout, awaiting workspace initialization, preserving submitted credentials
+while boot finishes, auth request timeout and malformed-response errors, and
+returning expired application sessions to login after checking /api/me. Provider
+401 errors are distinguished by checking whether the application session exists.
+CI now runs the real browser lifecycle with its server's exact APP_ORIGIN.
+
+The first actual browser journey was rejected because the audit server origin
+did not match the browser port. Matching APP_ORIGIN corrected that test setup.
+A relative URL in the browser test's request client was also corrected.
+Previously untested endpoint success cases are retained in test_api_lifecycle.py.

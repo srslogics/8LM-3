@@ -55,3 +55,59 @@ def test_login_and_signup(width, height):
         assert page.locator("#password").get_attribute("minlength") == "1"
         assert not errors, errors
         browser.close()
+
+
+def test_workspace_failure_is_visible_and_retryable():
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(channel="chrome", headless=True)
+        page = browser.new_page()
+
+        def api(route):
+            if route.request.url.endswith("/api/me"):
+                route.fulfill(json={"user": {"email": "owner@example.test"}})
+            else:
+                route.fulfill(status=503, json={"error": "Database temporarily unavailable"})
+
+        page.route("**/api/**", api)
+        page.goto(os.environ.get("TEST_BASE_URL", "http://localhost:8021"))
+        page.locator("#retry-btn").wait_for()
+        assert page.locator("#workspace-title").inner_text() == "Failed to load"
+        assert page.locator("#app-shell").is_visible()
+        browser.close()
+
+
+def test_late_workspace_response_after_logout_stays_signed_out():
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(channel="chrome", headless=True)
+        page = browser.new_page()
+        pending = []
+        attempts = 0
+
+        def api(route):
+            nonlocal attempts
+            path = route.request.url
+            if path.endswith("/api/me"):
+                route.fulfill(json={"user": {"email": "owner@example.test"}})
+            elif path.endswith("/api/logout"):
+                route.fulfill(json={"ok": True})
+            elif path.endswith("/api/workspaces"):
+                attempts += 1
+                if attempts == 1:
+                    route.fulfill(status=503, json={"error": "Temporarily unavailable"})
+                else:
+                    pending.append(route)
+            else:
+                route.fulfill(status=401, json={"error": "Please log in."})
+
+        page.route("**/api/**", api)
+        page.goto(os.environ.get("TEST_BASE_URL", "http://localhost:8021"))
+        page.locator("#retry-btn").click()
+        page.locator("#nav-signout-btn").click()
+        page.locator("#auth-screen").wait_for()
+        assert pending
+        pending[0].fulfill(json={"workspaces": []})
+        page.wait_for_load_state("networkidle")
+        assert page.locator("#auth-screen").is_visible()
+        assert page.locator("#app-shell").is_hidden()
+        assert page.locator("#onboarding-screen").is_hidden()
+        browser.close()

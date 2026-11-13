@@ -18,19 +18,28 @@ function toast(msg, type) {
 
 /* ── Auth fetch ──────────────────────────────────── */
 async function request(path, body) {
-  const res = await fetch(
-    path,
-    body
-      ? {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      : {},
-  );
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Please try again.");
-  return data;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60000);
+  try {
+    const response = await fetch(path, {
+      signal: controller.signal,
+      ...(body ? {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      } : {}),
+    });
+    const data = await response.json().catch(() => ({
+      error: "The server returned an unexpected response. Please retry.",
+    }));
+    if (!response.ok || data.error) throw new Error(data.error || "Please try again.");
+    return data;
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("Request timed out. Please retry.");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /* ── Workspace fetch (60 s timeout) ─────────────── */
@@ -60,6 +69,14 @@ async function workspaceRequest(path, method, body) {
     data = await res.json();
   } catch {
     data = { error: "Unexpected response." };
+  }
+  if (res.status === 401) {
+    // Provider token failures also use 401. Check the application session first.
+    const session = await request("/api/me");
+    if (!session.user) {
+      renderUser(null);
+      $("status").textContent = "Your session expired. Please sign in again.";
+    }
   }
   if (!res.ok) throw new Error(data.error || "Request failed.");
   return data;
@@ -146,17 +163,30 @@ if ($("campaigns-go-fetch-btn"))
 let authMode = "login";
 let currentManage = false;
 
-function renderUser(user) {
+let authenticationGeneration = 0;
+
+async function renderUser(user) {
+  authenticationGeneration += 1;
+  closeNavigation();
+  document.body.classList.remove("me-is-editing");
   $("auth-screen").hidden = Boolean(user);
   $("password").value = "";
   $("status").textContent = "";
   if (user) {
     $("nav-email").textContent = user.email;
     $("nav-avatar").textContent = (user.email[0] || "?").toUpperCase();
-    loadWorkspacesOnBoot();
+    await loadWorkspacesOnBoot();
   } else {
+    activeWs = null;
+    currentRole = "Viewer";
+    currentManage = false;
+    campaignPlatformChoices.clear();
     $("app-shell").hidden = true;
     hideOnboarding();
+    $("password").type = "password";
+    $("show").textContent = "Show";
+    $("show").setAttribute("aria-pressed", "false");
+    $("show").setAttribute("aria-label", "Show password");
   }
 }
 
@@ -188,16 +218,15 @@ $("show").onclick = () => {
 
 $("form").onsubmit = async (ev) => {
   ev.preventDefault();
-  await boot;
+  const credentials = { email: $("email").value, password: $("password").value };
+  const action = authMode;
   $("submit").disabled = true;
   $("switch").disabled = true;
   $("status").textContent = "";
   try {
-    const data = await request("/api/auth/" + authMode, {
-      email: $("email").value,
-      password: $("password").value,
-    });
-    renderUser(data.user);
+    await boot;
+    const data = await request("/api/auth/" + action, credentials);
+    await renderUser(data.user);
   } catch (e) {
     $("status").textContent = e.message;
   } finally {
@@ -289,6 +318,9 @@ function actionBtn(label, cls, fn) {
 }
 
 function showLoadError(msg) {
+  hideOnboarding();
+  $("app-shell").hidden = false;
+  showView("members");
   $("workspace-title").textContent = "Failed to load";
   const old = $("retry-btn");
   if (old) old.remove();
@@ -303,15 +335,17 @@ function showLoadError(msg) {
 }
 
 async function loadWorkspaces(preferred) {
+  const generation = authenticationGeneration;
   const old = $("retry-btn");
   if (old) old.remove();
 
   let workspaces;
   try {
     const res = await workspaceRequest("");
+    if (generation !== authenticationGeneration) return;
     workspaces = res.workspaces;
   } catch (e) {
-    showLoadError(e.message);
+    if (generation === authenticationGeneration) showLoadError(e.message);
     return;
   }
 
@@ -2215,6 +2249,7 @@ for (const id of [
 
 /* ── Boot ────────────────────────────────────────── */
 async function loadWorkspacesOnBoot() {
+  const generation = authenticationGeneration;
   const params = new URLSearchParams(location.hash.slice(1));
   const token = params.get("invite");
   const oauth = params.get("oauth");
@@ -2245,6 +2280,7 @@ async function loadWorkspacesOnBoot() {
 
   if (metaOAuth || metaOAuthError) { history.replaceState({}, "", location.pathname); toast(metaOAuthError || "Meta connected. Select your advertising account.", metaOAuthError ? "error" : "success"); }
   await loadWorkspaces(preferred);
+  if (generation !== authenticationGeneration) return;
   if (metaOAuth || metaOAuthError) {
     showView("meta");
   } else if (oauth === "success") {
