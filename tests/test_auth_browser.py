@@ -8,7 +8,7 @@ from playwright.sync_api import sync_playwright
 pytestmark = pytest.mark.browser
 
 
-@pytest.mark.parametrize("width,height", [(1440, 960), (390, 844)])
+@pytest.mark.parametrize("width,height", [(1280, 900), (1440, 960), (1920, 1080), (390, 844)])
 def test_login_and_signup(width, height):
     with sync_playwright() as pw:
         browser = pw.chromium.launch(channel="chrome", headless=True)
@@ -25,6 +25,7 @@ def test_login_and_signup(width, height):
 
         page.route("**/api/**", api)
         page.goto(os.environ.get("TEST_BASE_URL", "http://localhost:8021"))
+        page.evaluate("() => boot")
         page.locator("#heading").get_by_text("Log in", exact=True).wait_for()
         assert page.locator("#auth-screen").is_visible()
         assert not page.locator("#app-shell").is_visible()

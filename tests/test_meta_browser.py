@@ -5,6 +5,7 @@ import time
 from urllib.parse import urlsplit
 
 import pytest
+from desktop_layout import check_desktop_layout
 from playwright.sync_api import sync_playwright
 
 pytestmark = pytest.mark.browser
@@ -189,6 +190,7 @@ def test_meta_dashboard_and_builder(role, objective):
             page.locator(f'[data-me-objective="{objective}"]').click()
             page.locator("#me-objective-next").click()
             page.locator("#me-setup-create").click()
+            check_desktop_layout(page, f"meta-{objective}-step")
             page.locator("#meta-next").click()
             assert page.locator("#meta-name").is_visible()
             page.locator("#me-validation-list button").first.click()
@@ -205,6 +207,7 @@ def test_meta_dashboard_and_builder(role, objective):
             if objective == "OUTCOME_SALES":
                 page.locator("#meta-pixel").select_option("66")
                 page.locator("#meta-budget-scope").select_option("CAMPAIGN")
+            check_desktop_layout(page, f"meta-{objective}-adset")
             page.screenshot(path=f"/tmp/meta-editor-adset-{objective}.png")
             page.locator("#meta-age-min").fill("60")
             page.locator("#meta-age-max").fill("30")
@@ -213,12 +216,14 @@ def test_meta_dashboard_and_builder(role, objective):
             page.locator("#meta-age-max").fill("65")
             page.locator("#meta-budget").fill("150.25")
             page.locator("#meta-next").click()
+            check_desktop_layout(page, f"meta-{objective}-creative")
             page.locator("#meta-page").select_option("55")
             page.locator("#meta-image").select_option("a" * 32)
             page.locator("#meta-url").fill("https://example.com")
             page.locator("#meta-primary").fill("Explore our services")
             page.locator("#meta-headline").fill("Our services")
             page.locator("#meta-next").click()
+            check_desktop_layout(page, f"meta-{objective}-review")
             assert "150.25 INR" in page.locator("#meta-review").inner_text()
             page.locator("#meta-back").click()
             assert page.locator("#meta-headline").input_value() == "Our services"
